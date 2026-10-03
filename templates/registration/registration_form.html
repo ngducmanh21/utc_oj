@@ -134,6 +134,7 @@
 {% block js_media %}
     {% include "timezone/media-js.html" %}
     {{ form.media.js }}
+    <script src="{{ static('registration-email.js') }}" defer></script>
     <script type="text/javascript">
         $(function () {
             $('.pass-req-link').click(function () {
@@ -172,11 +173,12 @@
                     <div class="form-field-error">{{ form.username.errors }}</div>
                 {% endif %}
 
-                <div class="block-header">{{ _('Email') }}<small>({{ _('please choose a popular email provider, e.g. gmail') }})</small></div>
+                <div class="block-header">
+                    <label for="{{ form.email.id_for_label }}">{{ _('Email') }}</label>
+                    <small id="registration-email-hint">{{ _('Use an email address ending in @%(domain)s.', domain=registration_email_domain) }}</small>
+                </div>
                 <span class="fullwidth{% if form.email.errors %}-error{% endif %}">{{ form.email }}</span>
-                {% if form.email.errors %}
-                    <div class="form-field-error">{{ form.email.errors }}</div>
-                {% endif %}
+                <div id="registration-email-error" class="form-field-error" aria-live="polite"{% if not form.email.errors %} hidden{% endif %}>{{ form.email.errors }}</div>
 
                 <div class="block-header">{{ _('Password') -}}
                     <small>(<a href="#" class="pass-req-link">?</a>)</small>

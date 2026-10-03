@@ -17,6 +17,7 @@ from sortedm2m.forms import SortedMultipleChoiceField
 from judge.forms import SocialAuthMixin
 from judge.models import Language, Organization, Profile, TIMEZONE
 from judge.utils.recaptcha import ReCaptchaField, ReCaptchaWidget
+from judge.utils.registration import REGISTRATION_EMAIL_DOMAIN, REGISTRATION_EMAIL_ERROR, validate_registration_email
 from judge.utils.subscription import Subscription, newsletter_id
 from judge.widgets import Select2MultipleWidget, Select2Widget
 
@@ -42,17 +43,27 @@ class CustomRegistrationForm(RegistrationForm):
     if ReCaptchaField is not None:
         captcha = ReCaptchaField(widget=ReCaptchaWidget())
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['email'].widget.attrs.update({
+            'placeholder': 'student@%s' % REGISTRATION_EMAIL_DOMAIN,
+            'autocomplete': 'email',
+            'aria-describedby': 'registration-email-hint registration-email-error',
+            'data-registration-email-domain': REGISTRATION_EMAIL_DOMAIN,
+            'data-registration-email-error': REGISTRATION_EMAIL_ERROR % {'domain': REGISTRATION_EMAIL_DOMAIN},
+        })
+
     def clean_email(self):
-        if User.objects.filter(email=self.cleaned_data['email']).exists():
+        email = validate_registration_email(self.cleaned_data['email'])
+        if User.objects.filter(email=email).exists():
             raise forms.ValidationError(gettext('The email address "%s" is already taken. Only one registration '
-                                                'is allowed per address.') % self.cleaned_data['email'])
-        if '@' in self.cleaned_data['email']:
-            domain = self.cleaned_data['email'].split('@')[-1].lower()
-            if (domain in settings.BAD_MAIL_PROVIDERS or
-                    any(regex.match(domain) for regex in bad_mail_regex)):
-                raise forms.ValidationError(gettext('Your email provider is not allowed due to history of abuse. '
-                                                    'Please use a reputable email provider.'))
-        return self.cleaned_data['email']
+                                                'is allowed per address.') % email)
+        domain = email.rsplit('@', 1)[1]
+        if (domain in settings.BAD_MAIL_PROVIDERS or
+                any(regex.match(domain) for regex in bad_mail_regex)):
+            raise forms.ValidationError(gettext('Your email provider is not allowed due to history of abuse. '
+                                                'Please use a reputable email provider.'))
+        return email
 
     def clean_organizations(self):
         organizations = self.cleaned_data.get('organizations') or []
@@ -78,6 +89,7 @@ class RegistrationView(OldRegistrationView):
         kwargs['tos_url'] = settings.TERMS_OF_SERVICE_URL
         kwargs['oauth_only'] = settings.OAUTH_ONLY
         kwargs['oauth'] = self.social_auth
+        kwargs['registration_email_domain'] = REGISTRATION_EMAIL_DOMAIN
         return super(RegistrationView, self).get_context_data(**kwargs)
 
     @transaction.atomic

@@ -9880,3 +9880,17 @@ msgstr "Phiên sửa không còn quyền áp dụng bộ test."
 #: judge/utils/problem_data_publication.py:291
 msgid "This revision is not available for publication."
 msgstr "Không thể áp dụng phiên bản bộ test này."
+
+#: judge/utils/registration.py
+#, python-format
+msgid "Only email addresses ending in @%(domain)s are accepted."
+msgstr "Chỉ chấp nhận email có đuôi @%(domain)s."
+
+#: templates/registration/registration_form.html templates/registration/oauth.html
+#, python-format
+msgid "Use an email address ending in @%(domain)s."
+msgstr "Sử dụng email @%(domain)s."
+
+#: templates/registration/oauth.html
+msgid "Sign up with an external account"
+msgstr "Đăng ký bằng tài khoản bên ngoài"

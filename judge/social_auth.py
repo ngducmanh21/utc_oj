@@ -12,12 +12,13 @@ from django.urls import reverse
 from requests import HTTPError
 from reversion import revisions
 from social_core.backends.github import GithubOAuth2
-from social_core.exceptions import InvalidEmail, SocialAuthBaseException
+from social_core.exceptions import AuthException, InvalidEmail, SocialAuthBaseException
 from social_core.pipeline.partial import partial
 from social_django.middleware import SocialAuthExceptionMiddleware as OldSocialAuthExceptionMiddleware
 
 from judge.forms import ProfileForm
 from judge.models import Language, Profile
+from judge.utils.registration import validate_registration_email
 
 logger = logging.getLogger('judge.social_auth')
 
@@ -53,6 +54,14 @@ def verify_email(backend, details, *args, **kwargs):
         raise InvalidEmail(backend)
 
 
+def verify_registration_email(backend, details, user=None, *args, **kwargs):
+    if user is None:
+        try:
+            details['email'] = validate_registration_email(details.get('email'))
+        except forms.ValidationError as exc:
+            raise AuthException(backend, exc.messages[0]) from exc
+
+
 class SocialPostAuthForm(forms.Form):
     username = forms.RegexField(regex=re.compile(r'^\w+$', re.ASCII), max_length=30, label='Username',
                                 error_messages={'invalid': 'A username must contain letters, numbers, or underscores.'})
@@ -75,7 +84,9 @@ class SocialPostAuthForm(forms.Form):
 
 
 @partial
-def get_username_password(backend, user, username=None, *args, **kwargs):
+def get_username_password(backend, user, details, username=None, *args, **kwargs):
+    # Resuming this partial step skips the earlier pipeline validator.
+    verify_registration_email(backend, details, user=user)
     if not user:
         request = backend.strategy.request
         if request.POST:

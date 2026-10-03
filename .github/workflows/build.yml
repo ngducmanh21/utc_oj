@@ -39,10 +39,14 @@ jobs:
         key: pip-${{ runner.os }}-${{ secrets.CACHE_VERSION }}-${{ hashFiles('requirements.txt') }}
     - name: Install unit test dependencies
       run: |
+        sudo apt-get update
+        sudo apt-get install -y gettext
         pip install wheel
         pip install -r requirements.txt
         pip install coverage
         cp .ci.settings.py dmoj/local_settings.py
+    - name: Compile Vietnamese messages
+      run: python manage.py compilemessages -l vi
     - name: Collect jsi18n
       run: python manage.py compilejsi18n
     - name: Run unit tests
@@ -61,5 +65,7 @@ jobs:
         run: npm ci
       - name: Test resumable upload client
         run: npm run test:test-upload
+      - name: Test registration email validation
+        run: npm run test:registration
       - name: Build style.css
         run: ./make_style.sh

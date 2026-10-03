@@ -26,7 +26,8 @@
 
 {% if oauth.has_google_auth or oauth.has_facebook_auth or oauth.has_github_auth %}
     {% if request.path == url('registration_register') %}
-        <h4>{{ _('Sign up with Gmail') }}</h4>
+        <h4>{{ _('Sign up with an external account') }}</h4>
+        <p>{{ _('Use an email address ending in @%(domain)s.', domain=registration_email_domain) }}</p>
     {% else %}
         <h4>{{ _('Or log in with...') }}</h4>
     {% endif %}

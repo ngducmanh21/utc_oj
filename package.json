@@ -4,6 +4,7 @@
   "scripts": {
     "vendor:test-upload": "node scripts/vendor-test-upload.js",
     "test:test-upload": "node --test tests/js/test-data-upload.test.js",
+    "test:registration": "node --test tests/js/registration-email.test.js",
     "format": "prettier --write websocket",
     "format:check": "prettier --check websocket"
   },
