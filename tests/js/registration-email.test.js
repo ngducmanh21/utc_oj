@@ -6,13 +6,13 @@ import vm from 'node:vm';
 const context = vm.createContext({window: {}, document: {readyState: 'complete', querySelector: () => null}});
 vm.runInContext(await readFile(new URL('../../resources/registration-email.js', import.meta.url), 'utf8'), context);
 
-function fixture() {
+function fixture(domains = 'lms.utc.edu.vn,gmail.com') {
     const events = {};
     const formEvents = {};
     const input = {
         value: '',
-        dataset: {registrationEmailDomain: 'lms.utc.edu.vn',
-            registrationEmailError: 'Chỉ chấp nhận email có đuôi @lms.utc.edu.vn.'},
+        dataset: {registrationEmailDomains: domains,
+            registrationEmailError: 'Chỉ chấp nhận email có đuôi @lms.utc.edu.vn, @gmail.com.'},
         customError: '',
         addEventListener(name, handler) { events[name] = handler; },
         form: {addEventListener(name, handler) { formEvents[name] = handler; }},
@@ -36,7 +36,7 @@ function fixture() {
 
 test('typing an outside domain or suffix lookalike shows the translated error', () => {
     const {input, error, events} = fixture();
-    for (const domain of ['gmail.com', 'utc.edu.vn', 'sub.lms.utc.edu.vn', 'lms.utc.edu.vn.evil.com',
+    for (const domain of ['outlook.com', 'gmail.com.evil.com', 'sub.gmail.com', 'fakegmail.com', 'gmail.com.', 'utc.edu.vn', 'sub.lms.utc.edu.vn', 'lms.utc.edu.vn.evil.com',
         'fakelms.utc.edu.vn', 'lms.utc.edu.vn.']) {
         input.value = `student@${domain}`;
         events.input();
@@ -47,9 +47,31 @@ test('typing an outside domain or suffix lookalike shows the translated error', 
     }
 });
 
+test('membership follows the backend whitelist including Gmail and arbitrary domains', () => {
+    for (const domain of ['lms.utc.edu.vn', 'gmail.com', 'example.edu']) {
+        const {input, events} = fixture(domain);
+        input.value = ` Student@${domain.toUpperCase()} `;
+        events.blur();
+        assert.equal(input.checkValidity(), true);
+        input.value = 'student@outlook.com';
+        events.input();
+        assert.equal(input.checkValidity(), false);
+    }
+});
+
+test('empty whitelist blocks any address and submit', () => {
+    const {input, events, formEvents} = fixture('');
+    input.value = 'student@gmail.com';
+    events.input();
+    assert.equal(input.checkValidity(), false);
+    let prevented = false;
+    formEvents.submit({preventDefault() { prevented = true; }});
+    assert.equal(prevented, true);
+});
+
 test('correcting the domain clears errors and accepts uppercase and trimmed email', () => {
     const {input, error, events} = fixture();
-    input.value = 'Student@gmail.com';
+    input.value = 'Student@outlook.com';
     events.input();
     input.value = ' Student@LMS.UTC.EDU.VN ';
     events.blur();
@@ -63,7 +85,7 @@ test('correcting the domain clears errors and accepts uppercase and trimmed emai
 test('submit validates autofilled values without input events and prevents invalid registration', () => {
     const {input, formEvents} = fixture();
     let prevented = false;
-    input.value = 'student@gmail.com';
+    input.value = 'student@outlook.com';
     formEvents.submit({preventDefault() { prevented = true; }});
     assert.equal(prevented, true);
     assert.equal(input.reported, true);

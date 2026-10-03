@@ -5,6 +5,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    - name: Keep local documentation out of Git
+      run: |
+        if git ls-files --error-unmatch 'docs/**' >/dev/null 2>&1; then
+          echo "Files under docs/ must remain untracked." >&2
+          exit 1
+        fi
     - name: Set up Python 3.12
       uses: actions/setup-python@v5
       with:

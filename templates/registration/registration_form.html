@@ -134,7 +134,7 @@
 {% block js_media %}
     {% include "timezone/media-js.html" %}
     {{ form.media.js }}
-    <script src="{{ static('registration-email.js') }}" defer></script>
+    <script src="{{ static('registration-email.js') }}?v=2" defer></script>
     <script type="text/javascript">
         $(function () {
             $('.pass-req-link').click(function () {
@@ -175,7 +175,7 @@
 
                 <div class="block-header">
                     <label for="{{ form.email.id_for_label }}">{{ _('Email') }}</label>
-                    <small id="registration-email-hint">{{ _('Use an email address ending in @%(domain)s.', domain=registration_email_domain) }}</small>
+                    <small id="registration-email-hint">{% if registration_email_open %}{{ _('Use an email address ending in %(domains)s.', domains=registration_email_domains) }}{% else %}{{ registration_email_message }}{% endif %}</small>
                 </div>
                 <span class="fullwidth{% if form.email.errors %}-error{% endif %}">{{ form.email }}</span>
                 <div id="registration-email-error" class="form-field-error" aria-live="polite"{% if not form.email.errors %} hidden{% endif %}>{{ form.email.errors }}</div>
@@ -236,7 +236,7 @@
                 {% endif %}
 
                 <hr>
-                <button style="float:right;" type="submit">{{ _('Register!') }}</button>
+                <button style="float:right;" type="submit"{% if not registration_email_open %} disabled{% endif %}>{{ _('Register!') }}</button>
             </form>
             {% endif %}
             {% include "registration/oauth.html" %}

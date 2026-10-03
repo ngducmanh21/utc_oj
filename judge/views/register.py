@@ -17,7 +17,8 @@ from sortedm2m.forms import SortedMultipleChoiceField
 from judge.forms import SocialAuthMixin
 from judge.models import Language, Organization, Profile, TIMEZONE
 from judge.utils.recaptcha import ReCaptchaField, ReCaptchaWidget
-from judge.utils.registration import REGISTRATION_EMAIL_DOMAIN, REGISTRATION_EMAIL_ERROR, validate_registration_email
+from judge.utils.registration import get_registration_email_domains, registration_email_message, \
+    validate_registration_email
 from judge.utils.subscription import Subscription, newsletter_id
 from judge.widgets import Select2MultipleWidget, Select2Widget
 
@@ -45,12 +46,13 @@ class CustomRegistrationForm(RegistrationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        domains = get_registration_email_domains()
         self.fields['email'].widget.attrs.update({
-            'placeholder': 'student@%s' % REGISTRATION_EMAIL_DOMAIN,
+            'placeholder': 'student@%s' % domains[0] if domains else '',
             'autocomplete': 'email',
             'aria-describedby': 'registration-email-hint registration-email-error',
-            'data-registration-email-domain': REGISTRATION_EMAIL_DOMAIN,
-            'data-registration-email-error': REGISTRATION_EMAIL_ERROR % {'domain': REGISTRATION_EMAIL_DOMAIN},
+            'data-registration-email-domains': ','.join(domains),
+            'data-registration-email-error': registration_email_message(domains),
         })
 
     def clean_email(self):
@@ -89,7 +91,10 @@ class RegistrationView(OldRegistrationView):
         kwargs['tos_url'] = settings.TERMS_OF_SERVICE_URL
         kwargs['oauth_only'] = settings.OAUTH_ONLY
         kwargs['oauth'] = self.social_auth
-        kwargs['registration_email_domain'] = REGISTRATION_EMAIL_DOMAIN
+        domains = get_registration_email_domains()
+        kwargs['registration_email_domains'] = ', '.join('@' + domain for domain in domains)
+        kwargs['registration_email_open'] = bool(domains)
+        kwargs['registration_email_message'] = registration_email_message(domains)
         return super(RegistrationView, self).get_context_data(**kwargs)
 
     @transaction.atomic

@@ -796,7 +796,7 @@ class NginxTusdIntegrationTests(TusdIntegrationTests):
         self.proxy_error_log = root / 'error.log'
         secret = root / 'secret.conf'
         secret.write_text('proxy_set_header X-Upload-Secret "test-internal-secret";\n')
-        snippet = (Path(settings.BASE_DIR) / 'docs/deployment/test-data-upload/nginx-uploads.conf').read_text()
+        snippet = (Path(settings.BASE_DIR) / 'deploy/test-data-upload/nginx-uploads.conf').read_text()
         snippet = snippet.replace('/etc/nginx/snippets/upload-secret.conf', str(secret))
         snippet = snippet.replace('http://site:8000', self.live_server_url)
         snippet = snippet.replace('http://tusd:1080', upstream)

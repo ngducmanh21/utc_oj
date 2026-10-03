@@ -76,7 +76,7 @@ def main():
     with socket.create_connection(('127.0.0.1', args.site_port), timeout=3):
         pass
 
-    snippet = (ROOT / 'docs/deployment/test-data-upload/nginx-uploads.conf').read_text()
+    snippet = (ROOT / 'deploy/test-data-upload/nginx-uploads.conf').read_text()
     secret = runtime / 'upload-secret.conf'
     with secret.open('w') as stream:
         os.fchmod(stream.fileno(), 0o600)

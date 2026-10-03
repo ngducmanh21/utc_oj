@@ -52,3 +52,4 @@ resources/theme-toggle.css
 .local-test-uploads/
 /problem_data/
 /codex-session-*.md
+/docs/

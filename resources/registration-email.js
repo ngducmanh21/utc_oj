@@ -2,13 +2,14 @@
     'use strict';
 
     function init(input, error) {
-        var domain = input.dataset.registrationEmailDomain;
+        var domains = input.dataset.registrationEmailDomains.split(',').filter(Boolean);
         var message = input.dataset.registrationEmailError;
 
         function validate() {
             var value = input.value.trim();
             var emailDomain = value.slice(value.lastIndexOf('@') + 1).toLowerCase();
-            input.setCustomValidity(value && !input.validity.typeMismatch && emailDomain !== domain ? message : '');
+            input.setCustomValidity(!domains.length || (value && !input.validity.typeMismatch &&
+                !domains.includes(emailDomain)) ? message : '');
             error.textContent = input.validationMessage;
             error.hidden = !error.textContent;
             input.setAttribute('aria-invalid', input.validity.valid ? 'false' : 'true');
@@ -31,7 +32,7 @@
     }
 
     function setup() {
-        var input = document.querySelector('[data-registration-email-domain]');
+        var input = document.querySelector('[data-registration-email-domains]');
         if (input) {
             init(input, document.getElementById('registration-email-error'));
         }

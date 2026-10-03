@@ -9883,13 +9883,17 @@ msgstr "Không thể áp dụng phiên bản bộ test này."
 
 #: judge/utils/registration.py
 #, python-format
-msgid "Only email addresses ending in @%(domain)s are accepted."
-msgstr "Chỉ chấp nhận email có đuôi @%(domain)s."
+msgid "Only email addresses ending in %(domains)s are accepted."
+msgstr "Chỉ chấp nhận email có đuôi %(domains)s."
+
+#: judge/utils/registration.py
+msgid "New account registration is temporarily closed."
+msgstr "Đăng ký tài khoản mới đang tạm đóng."
 
 #: templates/registration/registration_form.html templates/registration/oauth.html
 #, python-format
-msgid "Use an email address ending in @%(domain)s."
-msgstr "Sử dụng email @%(domain)s."
+msgid "Use an email address ending in %(domains)s."
+msgstr "Sử dụng email %(domains)s."
 
 #: templates/registration/oauth.html
 msgid "Sign up with an external account"

@@ -828,6 +828,7 @@ AUTHENTICATION_BACKENDS = (
 )
 
 REGISTRATION_OPEN = True
+DMOJ_REGISTRATION_EMAIL_DOMAINS = ['lms.utc.edu.vn']
 
 SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.social_details',
