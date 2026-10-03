@@ -2,12 +2,15 @@
   "name": "@vnoi-admin/oj",
   "type": "module",
   "scripts": {
+    "vendor:test-upload": "node scripts/vendor-test-upload.js",
+    "test:test-upload": "node --test tests/js/test-data-upload.test.js",
     "format": "prettier --write websocket",
     "format:check": "prettier --check websocket"
   },
   "dependencies": {
     "@commander-js/extra-typings": "11.0.0",
     "commander": "11.0.0",
+    "tus-js-client": "4.3.1",
     "ws": "8.14.0"
   },
   "devDependencies": {

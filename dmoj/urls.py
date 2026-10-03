@@ -13,7 +13,7 @@ from judge.feed import AtomBlogFeed, AtomCommentFeed, AtomProblemFeed, BlogFeed,
 from judge.sitemap import sitemaps
 from judge.views import TitledTemplateView, api, blog, comment, contests, language, license, mailgun, notification, \
     organization, preview, problem, problem_download, problem_manage, ranked_submission, register, stats, status, \
-    submission, tag, tasks, ticket, two_factor, user, widgets
+    submission, tag, tasks, test_data_upload, ticket, two_factor, user, widgets
 from judge.views.magazine import MagazinePage
 from judge.views.misc_config import MiscConfigEdit
 from judge.views.problem_data import ProblemDataView, ProblemSubmissionDiff, \
@@ -101,6 +101,8 @@ def paged_list_view(view, name):
 
 
 urlpatterns = [
+    path('internal/test-data-uploads/authorize/', test_data_upload.authorize_tus),
+    path('internal/test-data-uploads/hooks/', test_data_upload.tus_hook),
     path('', blog.PostList.as_view(template_name='home.html', title=_('Home')), kwargs={'page': 1}, name='home'),
     path('500/', exception),
     path('admin/', admin.site.urls),
@@ -143,6 +145,13 @@ urlpatterns = [
         path('/test_data', ProblemDataView.as_view(), name='problem_data'),
         path('/test_data/init', problem_init_view, name='problem_data_init'),
         path('/test_data/diff', ProblemSubmissionDiff.as_view(), name='problem_submission_diff'),
+        path('/data/uploads/session/', test_data_upload.create_session, name='test_data_edit_session'),
+        path('/data/uploads/session/<uuid:session_id>/heartbeat/', test_data_upload.session_heartbeat),
+        path('/data/uploads/session/<uuid:session_id>/end/', test_data_upload.end_session),
+        path('/data/uploads/session/<uuid:session_id>/revoke/', test_data_upload.revoke_session),
+        path('/data/uploads/files/', test_data_upload.create_upload),
+        path('/data/uploads/files/<uuid:upload_id>/', test_data_upload.upload_status),
+        path('/data/uploads/files/<uuid:upload_id>/cancel/', test_data_upload.cancel_upload),
         path('/data/<path:path>', problem_data_file, name='problem_data_file'),
 
         path('/download/package', problem_download.DownloadProblemFullPackage.as_view(),

@@ -27,11 +27,12 @@ def get_problem_testcases_data(problem):
 
 
 class ProblemDataCompiler(object):
-    def __init__(self, problem, data, cases, files):
+    def __init__(self, problem, data, cases, files, persist=True):
         self.problem = problem
         self.data = data
         self.cases = cases
         self.files = files
+        self.persist = persist
 
         self.generator = data.generator
 
@@ -177,7 +178,8 @@ class ProblemDataCompiler(object):
                     data['checker'] = make_checker(case)
                 else:
                     case.checker_args = ''
-                case.save(update_fields=('checker_args', 'is_pretest'))
+                if self.persist:
+                    case.save(update_fields=('checker_args', 'is_pretest'))
                 (batch['batched'] if batch else cases).append(data)
             elif case.type == 'S':
                 if batch:
@@ -202,7 +204,8 @@ class ProblemDataCompiler(object):
                     case.checker_args = ''
                 case.input_file = ''
                 case.output_file = ''
-                case.save(update_fields=('checker_args', 'input_file', 'output_file'))
+                if self.persist:
+                    case.save(update_fields=('checker_args', 'input_file', 'output_file'))
             elif case.type == 'E':
                 if not batch:
                     raise ProblemDataError(_('Attempt to end batch outside of one in case #%d.') % i)
@@ -212,7 +215,8 @@ class ProblemDataCompiler(object):
                 case.generator_args = ''
                 case.checker = ''
                 case.checker_args = ''
-                case.save()
+                if self.persist:
+                    case.save()
                 end_batch()
                 batch = None
         if total_points <= 0:

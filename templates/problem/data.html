@@ -6,6 +6,10 @@
     <script type="text/javascript" src="{{ static('vnoj/jquery-ui/jquery-ui.min.js') }}"></script>
     <script type="text/javascript" src="{{ static('libs/featherlight/featherlight.min.js') }}"></script>
     <script type="text/javascript" src="{{ static('vnoj/jszip/jszip.min.js') }}"></script>
+    {% if test_data_upload_enabled %}
+        <script src="{{ static('vendor/tus/tus.min.js') }}"></script>
+        <script src="{{ static('test-data-upload.js') }}"></script>
+    {% endif %}
     <script type="text/javascript">
         window.valid_files = {{valid_files_json}}.sort();
         window.testcase_limit = {{testcase_limit}};
@@ -548,21 +552,10 @@
             });
 
             $('input#delete-all').change(function() {
-                if (this.checked) {
-                    $("input[name$='DELETE']").attr('checked', true);
-                }
-                else {
-                    $("input[name$='DELETE']").attr('checked', false);
-                }
+                $("input[name$='DELETE']").prop('checked', this.checked);
             });
             $('#problem-data-zipfile-clear_id').change(function(){
-                if (this.checked) {
-                    $('input#delete-all').attr('checked', true);
-                }
-                else {
-                    $('input#delete-all').attr('checked', false);
-                }
-                $('input#delete-all').change();
+                $('input#delete-all').prop('checked', this.checked).trigger('change');
             });
             if (parseInt($total.val()) == 0 && window.valid_files.length) {
                 fill_testcases();
@@ -577,8 +570,18 @@
                 return lower === '.ds_store' || lower.indexOf('._') === 0 || path.indexOf('__MACOSX/') === 0;
             }
 
+            {% if test_data_upload_enabled %}
+            const testUploadConfig = {{ test_data_upload_config }};
+            testUploadConfig.initial_files = testUploadConfig.initial_files || window.valid_files.slice();
+            TestDataUpload.init(testUploadConfig, function (files, autofill) {
+                window.valid_files = files.filter(file => !shouldIgnoreFile(file)).sort();
+                valid_files_options = window.valid_files.map(file => ({id: file, text: file}));
+                if (autofill) fill_testcases();
+            });
+            {% else %}
             $("#id_problem-data-zipfile").change((event) => {
                 let fileInput = event.target.files[0];
+                if (!fileInput) return;
 
                 // 100 MB limit (Cloudflare's request body size limit)
                 if (fileInput && fileInput.size > 100 * 1024 * 1024) {
@@ -594,6 +597,7 @@
                     JSZip.loadAsync(ev.target.result).then(function(zip) {
                         let all_files = Object.keys(zip.files).sort();
                         window.valid_files = all_files.filter(file => !shouldIgnoreFile(file));
+                        valid_files_options = window.valid_files.map(file => ({id: file, text: file}));
 
                         fill_testcases();
                     }).catch(function(err) {
@@ -605,6 +609,7 @@
                 };
                 reader.readAsArrayBuffer(fileInput);
             });
+            {% endif %}
             (function () {
                 var selectedFiles = [];
                 var $modal = $('#build-test-data-modal');
@@ -789,6 +794,9 @@
 {% block media %}
     {{data_form.media.css}}
     <link rel="stylesheet" href="{{ static('vnoj/jquery-ui/jquery-ui.min.css') }}">
+    {% if test_data_upload_enabled %}
+        <link rel="stylesheet" href="{{ static('test-data-upload.css') }}">
+    {% endif %}
     <style>
         #case-table .select2 {
             text-align: initial;
@@ -1015,8 +1023,31 @@
             {% if quota_warning_suffix %}{{ quota_warning_suffix|safe }}{% endif %}
         </div>
     {% endif %}
-    <form action="" method="POST" enctype="multipart/form-data">
+    <form id="test-data-form" action="" method="POST" enctype="multipart/form-data">
         {% csrf_token %}
+        {% if test_data_upload_enabled %}
+            <section id="test-data-upload" aria-labelledby="test-upload-heading">
+                <h3 id="test-upload-heading">{{ _('Test data upload') }}</h3>
+                <p id="test-upload-status" role="status" aria-live="polite">{{ _('Start an edit session to change test data.') }}</p>
+                <label for="test-upload-progress" class="test-upload-progress-label">{{ _('Upload progress') }}</label>
+                <progress id="test-upload-progress" max="100" value="0" hidden></progress>
+                <p id="test-upload-detail"></p>
+                <p id="test-upload-confirmed"></p>
+                <p id="test-upload-limit"></p>
+                <div class="test-upload-actions">
+                    <button type="button" class="button" id="test-upload-begin">{{ _('Edit test data') }}</button>
+                    <button type="button" class="button" id="test-upload-retry" hidden>{{ _('Continue / Retry') }}</button>
+                    <button type="button" class="button" id="test-upload-cancel" hidden title="{{ _('Cancel the ZIP upload and keep editing test data.') }}">{{ _('Cancel ZIP upload') }}</button>
+                    <button type="button" class="button" id="test-upload-end" hidden title="{{ _('End editing and release the problem lock.') }}">{{ _('End edit session') }}</button>
+                    <button type="button" class="button" id="test-upload-revoke" hidden>{{ _('Revoke edit session') }}</button>
+                </div>
+                <noscript>{{ _('JavaScript is required to edit test data and upload ZIP files.') }}</noscript>
+            </section>
+            <input type="hidden" name="edit_session_id" id="id_edit_session_id">
+            <input type="hidden" name="edit_token" id="id_edit_token">
+            <input type="hidden" name="upload_id" id="id_upload_id">
+            <fieldset id="test-data-fields" disabled inert>
+        {% endif %}
         {{ cases_formset.management_form }}
         <table class="table">
             {{ data_form.as_table() }}
@@ -1095,6 +1126,7 @@
         </table>
         <input type="submit" value="{{ _('Save') }}" class="button" id="submit-button">
         <a id="add-case-row" href="#" style="display: None;"><i class="fa fa-plus"></i> {{ _('Add new case') }}</a>
+        {% if test_data_upload_enabled %}</fieldset>{% endif %}
     </form>
     <div style="display: none" class="generator-args-editor"><textarea></textarea><a class="button">{{ _('Save') }}</a></div>
 

@@ -49,3 +49,6 @@ resources/blog-post.css
 resources/theme-toggle.css
 .DS_Store
 .review/
+.local-test-uploads/
+/problem_data/
+/codex-session-*.md

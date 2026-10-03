@@ -1,7 +1,9 @@
 import json
 import mimetypes
 import os
+import uuid
 from itertools import chain
+from urllib.parse import urlsplit
 from zipfile import BadZipfile, ZipFile
 
 from django.conf import settings
@@ -14,6 +16,7 @@ from django.forms import BaseModelFormSet, CharField, ChoiceField, HiddenInput, 
 from django.http import Http404, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
+from django.utils.crypto import constant_time_compare
 from django.utils.html import escape, format_html
 from django.utils.http import urlencode
 from django.utils.safestring import mark_safe
@@ -21,14 +24,14 @@ from django.utils.translation import gettext as _, gettext_lazy
 from django.views.generic import DetailView
 
 from judge.highlight_code import highlight_code
-from judge.models import Problem, ProblemData, ProblemTestCase, Submission, problem_data_storage
+from judge.models import Problem, ProblemData, ProblemDataRevision, ProblemTestCase, Submission, problem_data_storage
 from judge.models.problem_data import CUSTOM_CHECKERS, IO_METHODS
 from judge.utils.organization import add_quota_context
-from judge.utils.problem_data import ProblemDataCompiler
+from judge.utils.problem_data import ProblemDataCompiler, ProblemDataError
 from judge.utils.unicode import utf8text
 from judge.utils.views import TitleMixin, add_file_response, generic_message
 from judge.views.problem import ProblemMixin
-from judge.widgets import Select2Widget
+from judge.widgets import Select2Widget, TestDataZipWidget
 
 mimetypes.init()
 mimetypes.add_type('application/x-yaml', '.yml')
@@ -65,6 +68,17 @@ class ProblemDataForm(ModelForm):
     io_output_file = CharField(max_length=100, label=gettext_lazy('Output to file'), required=False)
     checker_type = ChoiceField(choices=CUSTOM_CHECKERS, widget=Select2Widget(attrs={'style': 'width: 200px'}))
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        archive = self.instance.zipfile
+        if archive and '/_revisions/' in archive.name:
+            # Revision files use a fixed storage name. Keep the original upload
+            # name visible, including after later edits reuse the same ZIP.
+            self.fields['zipfile'].widget.filename = ProblemDataRevision.objects.filter(
+                problem_id=self.instance.problem_id, status='APPLIED', data__zipfile=archive.name,
+                upload__isnull=False,
+            ).values_list('upload__filename', flat=True).first()
+
     def clean_zipfile(self):
         if hasattr(self, 'zip_valid') and not self.zip_valid:
             raise ValidationError(_('Your zip file is invalid!'))
@@ -83,6 +97,7 @@ class ProblemDataForm(ModelForm):
             'output_limit',
         ]
         widgets = {
+            'zipfile': TestDataZipWidget,
             'checker_args': HiddenInput,
             'checker': Select2Widget(attrs={'style': 'width: 200px'}),
             'grader': Select2Widget(attrs={'style': 'width: 200px'}),
@@ -192,6 +207,13 @@ class ProblemArchived(Exception):
 class ProblemDataView(TitleMixin, ProblemManagerMixin):
     template_name = 'problem/data.html'
 
+    def get(self, request, *args, **kwargs):
+        local_proxy = getattr(settings, 'DMOJ_TEST_UPLOAD_LOCAL_PROXY_URL', None)
+        if settings.DEBUG and settings.DMOJ_TEST_UPLOAD_ENABLED and local_proxy:
+            if request.get_host() != urlsplit(local_proxy).netloc:
+                return HttpResponseRedirect(local_proxy.rstrip('/') + request.get_full_path())
+        return super().get(request, *args, **kwargs)
+
     def get_object(self, queryset=None):
         problem = super().get_object(queryset)
         # There is nothing left on disk to edit once the data has gone to cold storage.
@@ -237,13 +259,16 @@ class ProblemDataView(TitleMixin, ProblemManagerMixin):
     def get_data_form(self, post=False):
         return ProblemDataForm(data=self.request.POST if post else None, prefix='problem-data',
                                files=self.request.FILES if post else None,
-                               instance=ProblemData.objects.get_or_create(problem=self.object)[0])
+                               instance=(ProblemData.objects.filter(problem=self.object).first() or
+                                         ProblemData(problem=self.object)))
 
     def get_case_formset(self, files, post=False):
         return ProblemCaseFormSet(data=self.request.POST if post else None, prefix='cases', valid_files=files,
                                   queryset=ProblemTestCase.objects.filter(dataset_id=self.object.pk).order_by('order'))
 
     def get_valid_files(self, data, post=False):
+        if post and getattr(settings, 'DMOJ_TEST_UPLOAD_ENABLED', False) and self.request.POST.get('upload_id'):
+            return self._selected_upload.entries if self._selected_upload else []
         try:
             if post and 'problem-data-zipfile-clear' in self.request.POST:
                 return []
@@ -262,7 +287,7 @@ class ProblemDataView(TitleMixin, ProblemManagerMixin):
             valid_files = context['valid_files'] = self.get_valid_files(context['data_form'].instance)
             context['data_form'].zip_valid = valid_files is not False
             context['cases_formset'] = self.get_case_formset(valid_files)
-        context['valid_files_json'] = mark_safe(json.dumps(context['valid_files']))
+        context['valid_files_json'] = mark_safe(json.dumps(context['valid_files']).replace('<', '\\u003c'))
         context['valid_files'] = set(context['valid_files'])
         context['all_case_forms'] = chain(context['cases_formset'], [context['cases_formset'].empty_form])
 
@@ -278,6 +303,25 @@ class ProblemDataView(TitleMixin, ProblemManagerMixin):
             add_quota_context(problem.organization, context)
 
         context['quota_warning_suffix'] = settings.VNOJ_QUOTA_WARNING_SUFFIX
+        context['test_data_upload_enabled'] = getattr(settings, 'DMOJ_TEST_UPLOAD_ENABLED', False)
+        if context['test_data_upload_enabled']:
+            config = {
+                'base_url': reverse('test_data_edit_session', args=[self.object.code]).removesuffix('session/'),
+                'storage_key': 'test-data-upload:%s:%s' % (self.request.user.pk, self.object.pk),
+                'current_user': self.request.user.get_username(),
+                'max_size': settings.DMOJ_TEST_UPLOAD_MAX_SIZE,
+                'chunk_size': settings.DMOJ_TEST_UPLOAD_CHUNK_SIZE,
+                'heartbeat_seconds': settings.DMOJ_TEST_UPLOAD_HEARTBEAT_SECONDS,
+                'tus_endpoint': settings.DMOJ_TEST_UPLOAD_TUS_ENDPOINT,
+                'initial_files': problem_data_storage.get_problem_metadata(self.object)['files'],
+                'session': None,
+                'upload': None,
+            }
+            if getattr(self, '_edit_session', None):
+                config['session'] = {'id': str(self._edit_session.pk), 'token': str(self._edit_session.token)}
+                if getattr(self, '_selected_upload', None):
+                    config['upload'] = {'id': str(self._selected_upload.pk)}
+            context['test_data_upload_config'] = mark_safe(json.dumps(config).replace('<', '\\u003c'))
         return context
 
     def check_valid(self, data_form, cases_formset):
@@ -311,6 +355,8 @@ class ProblemDataView(TitleMixin, ProblemManagerMixin):
 
     def post(self, request, *args, **kwargs):
         self.object = problem = self.get_object()
+        if getattr(settings, 'DMOJ_TEST_UPLOAD_ENABLED', False):
+            return self.post_resumable(request, problem)
         data_form = self.get_data_form(post=True)
         valid_files = self.get_valid_files(data_form.instance, post=True)
         data_form.zip_valid = valid_files is not False
@@ -326,6 +372,55 @@ class ProblemDataView(TitleMixin, ProblemManagerMixin):
             return HttpResponseRedirect(request.get_full_path())
         return self.render_to_response(self.get_context_data(data_form=data_form, cases_formset=cases_formset,
                                                              valid_files=valid_files))
+
+    def post_resumable(self, request, problem):
+        from judge.utils.problem_data_publication import apply_revision, prepare_revision
+        from judge.utils.test_data_upload import UploadError, owned_session, ready_upload, staging_lock
+
+        self._edit_session = None
+        self._selected_upload = None
+        data_form = self.get_data_form(post=True)
+        valid_files = []
+        try:
+            # A retry after the response was lost must find the same durable journal,
+            # even though the session has already left ACTIVE.
+            try:
+                session_id = uuid.UUID(request.POST.get('edit_session_id', ''))
+            except (ValueError, TypeError, AttributeError):
+                raise UploadError('invalid_session', 'Start an editing session first.', 403)
+            existing = ProblemDataRevision.objects.select_related('session').filter(
+                session_id=session_id, problem=problem, session__user=request.user,
+            ).first()
+            if existing and constant_time_compare(str(existing.session.token), request.POST.get('edit_token', '')):
+                with staging_lock('publish-%s' % problem.pk, blocking=False):
+                    apply_revision(existing.pk)
+                return HttpResponseRedirect(reverse('problem_data', args=[problem.code]) + '?test-data-saved=1')
+            self._edit_session = owned_session(
+                problem, request.user, request.POST.get('edit_session_id'), request.POST.get('edit_token'),
+            )
+            upload_id = request.POST.get('upload_id')
+            if upload_id:
+                self._selected_upload = ready_upload(self._edit_session, upload_id)
+            if 'problem-data-zipfile' in request.FILES:
+                raise ValidationError(_('Upload the ZIP using the progress panel before saving.'))
+            valid_files = self.get_valid_files(data_form.instance, post=True)
+            data_form.zip_valid = True
+            cases_formset = self.get_case_formset(valid_files, post=True)
+            if self.check_valid(data_form, cases_formset):
+                with staging_lock('publish-%s' % problem.pk, blocking=False):
+                    revision = prepare_revision(
+                        problem, request.user, self._edit_session.pk, self._edit_session.token,
+                        upload_id, data_form, cases_formset,
+                    )
+                    apply_revision(revision.pk)
+                return HttpResponseRedirect(reverse('problem_data', args=[problem.code]) + '?test-data-saved=1')
+        except (ValidationError, ProblemDataError, UploadError, OSError) as error:
+            data_form.is_valid()
+            data_form.add_error(None, error if isinstance(error, ValidationError) else _(str(error)))
+            cases_formset = self.get_case_formset(valid_files, post=True)
+        return self.render_to_response(self.get_context_data(
+            data_form=data_form, cases_formset=cases_formset, valid_files=valid_files,
+        ))
 
     put = post
 

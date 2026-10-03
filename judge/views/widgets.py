@@ -7,7 +7,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.files.storage import default_storage
 from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, \
-    HttpResponseRedirect
+    HttpResponseRedirect, JsonResponse
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 
@@ -105,6 +105,10 @@ def static_uploader(static_file):
 
 
 def csrf_failure(request: HttpRequest, reason=''):
+    if request.resolver_match and request.resolver_match.func.__module__ == 'judge.views.test_data_upload':
+        return JsonResponse({
+            'error': {'code': 'csrf_failed', 'message': 'Your security token expired. Reload the page and try again.'},
+        }, status=403)
     # Redirect to the same page in case of CSRF failure
     # So that we can turn on cloudflare DDOS protection without
     # showing the CSRF failure page to user

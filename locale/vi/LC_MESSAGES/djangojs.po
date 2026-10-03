@@ -28,3 +28,194 @@ msgctxt "time format without day"
 msgid "%h:%m:%s"
 msgstr "%h:%m:%s"
 
+#: resources/test-data-upload.js
+msgid "Saved ZIP"
+msgstr "ZIP đã lưu"
+
+#: resources/test-data-upload.js
+msgid "New ZIP"
+msgstr "ZIP mới"
+
+#: resources/test-data-upload.js
+msgid "Not saved yet"
+msgstr "Chưa lưu"
+
+#: resources/test-data-upload.js:12
+msgid "Secure file verification requires HTTPS or localhost."
+msgstr "Để kiểm tra tệp an toàn, hãy truy cập qua HTTPS hoặc localhost."
+
+#: resources/test-data-upload.js:92
+msgid "End previous edit session"
+msgstr "Kết thúc phiên sửa trước"
+
+#: resources/test-data-upload.js:92
+msgid "Revoke edit session"
+msgstr "Thu hồi phiên sửa"
+
+#: resources/test-data-upload.js:143
+msgid "min"
+msgstr "phút"
+
+#: resources/test-data-upload.js:143
+msgid "sec"
+msgstr "giây"
+
+#: resources/test-data-upload.js:144
+msgid "remaining (estimated)"
+msgstr "còn lại (ước tính)"
+
+#: resources/test-data-upload.js:147
+msgid "Confirmed by server"
+msgstr "Máy chủ đã nhận"
+
+#: resources/test-data-upload.js:170
+msgid "The request failed. Please try again."
+msgstr "Yêu cầu thất bại. Vui lòng thử lại."
+
+#: resources/test-data-upload.js:214
+msgid "You can still edit testcases. Cancel the upload to use the current test data, or retry."
+msgstr "Bạn vẫn có thể sửa các testcase. Hủy tải ZIP để dùng bộ test hiện tại, hoặc thử tải lại."
+
+#: resources/test-data-upload.js:166 resources/test-data-upload.js:217
+msgid "Cannot reach the server. Retry to continue; your form is preserved."
+msgstr "Không thể kết nối với máy chủ. Hãy thử lại để tiếp tục; nội dung đang sửa vẫn được giữ nguyên."
+
+#: resources/test-data-upload.js:246
+msgid "Connection restored. Continue the upload."
+msgstr "Đã kết nối lại. Bạn có thể tiếp tục tải lên."
+
+#: resources/test-data-upload.js:246
+msgid "Editing test data."
+msgstr "Đang sửa bộ test."
+
+#: resources/test-data-upload.js:253
+msgid "Cannot confirm the edit session. Reconnecting; your form is preserved."
+msgstr "Chưa thể xác nhận phiên sửa. Đang kết nối lại; nội dung đang sửa vẫn được giữ nguyên."
+
+#: resources/test-data-upload.js:273
+msgid "This edit session is already open in another tab. Continue in that tab."
+msgstr "Phiên sửa này đang mở ở tab khác. Hãy tiếp tục trong tab đó."
+
+#: resources/test-data-upload.js:281
+msgid "Editing test data. Changes take effect only after Save."
+msgstr "Đang sửa bộ test. Thay đổi chỉ có hiệu lực sau khi nhấn Lưu."
+
+#: resources/test-data-upload.js:305
+msgid "ZIP checked. Ready to save; the test data has not been applied yet."
+msgstr "Đã kiểm tra ZIP. Bạn có thể nhấn Lưu; bộ test mới chưa được áp dụng."
+
+#: resources/test-data-upload.js:311
+msgid "Waiting for the upload to start…"
+msgstr "Đang chờ bắt đầu tải lên…"
+
+#: resources/test-data-upload.js:315 resources/test-data-upload.js:423
+msgid "Upload complete. Checking ZIP on the server…"
+msgstr "Đã tải lên xong. Máy chủ đang kiểm tra ZIP…"
+
+#: resources/test-data-upload.js:318
+msgid "Applying test data…"
+msgstr "Đang áp dụng bộ test…"
+
+#: resources/test-data-upload.js:326
+msgid "Test data saved. Reload the page to see the current data."
+msgstr "Đã lưu bộ test. Tải lại trang để xem dữ liệu mới nhất."
+
+#: resources/test-data-upload.js:329
+msgid "This upload cannot be used. Cancel it and select the ZIP again."
+msgstr "Không thể dùng bản tải lên này. Hãy hủy và chọn lại tệp ZIP."
+
+#: resources/test-data-upload.js:331
+msgid "Select the same ZIP to continue the unfinished upload."
+msgstr "Chọn lại đúng tệp ZIP để tiếp tục lần tải lên còn dang dở."
+
+#: resources/test-data-upload.js:336
+msgid "Waiting for the server. Your upload and form are preserved."
+msgstr "Đang chờ máy chủ. Dữ liệu đã tải lên và nội dung đang sửa vẫn được giữ nguyên."
+
+#: resources/test-data-upload.js:369 resources/test-data-upload.js:427
+msgid "Uploading ZIP…"
+msgstr "Đang tải ZIP lên…"
+
+#: resources/test-data-upload.js:382
+msgid "Connection interrupted. Retrying upload…"
+msgstr "Kết nối bị gián đoạn. Đang thử tải lại…"
+
+#: resources/test-data-upload.js:382
+msgid "Offline. Waiting to continue upload…"
+msgstr "Mất kết nối mạng. Đang chờ để tiếp tục tải lên…"
+
+#: resources/test-data-upload.js:408
+msgid "The upload service rejected the request. Your edit session is still active. Retry or cancel the ZIP upload."
+msgstr "Dịch vụ tải lên đã từ chối yêu cầu. Phiên sửa vẫn còn hiệu lực. Hãy thử lại hoặc hủy tải ZIP."
+
+#: resources/test-data-upload.js:412
+msgid "An upload request exceeded the server limit. Contact an administrator."
+msgstr "Yêu cầu tải lên vượt giới hạn của máy chủ. Vui lòng liên hệ quản trị viên."
+
+#: resources/test-data-upload.js:412
+msgid "Upload interrupted. Continue to retry from the confirmed position."
+msgstr "Tải lên bị gián đoạn. Nhấn Tiếp tục / Thử lại để tải tiếp từ vị trí máy chủ đã nhận."
+
+#: resources/test-data-upload.js:435
+msgid "ZIP size must be between 1 byte and"
+msgstr "Dung lượng ZIP phải từ 1 byte đến"
+
+#: resources/test-data-upload.js:441
+msgid "Verifying the selected file before upload…"
+msgstr "Đang kiểm tra tệp đã chọn trước khi tải lên…"
+
+#: resources/test-data-upload.js:446
+msgid "File verification"
+msgstr "Kiểm tra tệp"
+
+#: resources/test-data-upload.js:455
+msgid "This is a different file. Select the original ZIP, or cancel the unfinished upload first."
+msgstr "Đây là tệp khác. Hãy chọn đúng tệp ZIP ban đầu, hoặc hủy lần tải lên còn dang dở trước."
+
+#: resources/test-data-upload.js:491
+msgid "Starting edit session…"
+msgstr "Đang bắt đầu phiên sửa…"
+
+#: resources/test-data-upload.js:500
+msgid "End your previous edit session? Its unapplied uploads will be canceled."
+msgstr "Kết thúc phiên sửa trước của bạn? Các bản tải lên chưa áp dụng trong phiên đó sẽ bị hủy."
+
+#: resources/test-data-upload.js:501
+msgid "Revoke this edit session? Its unapplied uploads will be canceled."
+msgstr "Thu hồi phiên sửa này? Các bản tải lên chưa áp dụng trong phiên đó sẽ bị hủy."
+
+#: resources/test-data-upload.js:514
+msgid "End this edit session? Unapplied uploads will be canceled."
+msgstr "Kết thúc phiên sửa này? Các bản tải lên chưa áp dụng sẽ bị hủy."
+
+#: resources/test-data-upload.js:530
+msgid "Edit session ended. Changes have not been saved."
+msgstr "Đã kết thúc phiên sửa. Các thay đổi chưa được lưu."
+
+#: resources/test-data-upload.js:562
+msgid "Upload canceled. Your form is preserved; select another ZIP if needed."
+msgstr "Đã hủy tải ZIP. Nội dung đang sửa vẫn được giữ nguyên; bạn có thể chọn tệp ZIP khác nếu cần."
+
+#: resources/test-data-upload.js:588
+msgid "Start an edit session and wait until the ZIP is ready before saving."
+msgstr "Hãy bắt đầu phiên sửa và đợi kiểm tra ZIP hoàn tất trước khi lưu."
+
+#: resources/test-data-upload.js:592
+msgid "Saving test data… Please wait for confirmation."
+msgstr "Đang lưu bộ test… Vui lòng chờ xác nhận."
+
+#: resources/test-data-upload.js:602
+msgid "Test data saved. Start a new edit session to make further changes."
+msgstr "Đã lưu bộ test. Bắt đầu phiên sửa mới nếu muốn chỉnh sửa tiếp."
+
+#: resources/test-data-upload.js:602
+msgid "Start an edit session to change test data."
+msgstr "Bắt đầu phiên sửa để chỉnh sửa bộ test."
+
+#: resources/test-data-upload.js:603
+msgid "Maximum ZIP size"
+msgstr "Dung lượng ZIP tối đa"
+
+#: resources/test-data-upload.js:616
+msgid "Checking your previous edit session…"
+msgstr "Đang kiểm tra phiên sửa trước của bạn…"

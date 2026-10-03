@@ -4861,7 +4861,6 @@ msgstr "Tính lại điểm cho %s..."
 msgid "Successfully scheduled %d submission for rejudging."
 msgid_plural "Successfully scheduled %d submissions for rejudging."
 msgstr[0] "Đã lên lịch chấm lại %d bài giải"
-msgstr[1] "Đã lên lịch chấm lại %d bài giải"
 
 #: judge/views/ranked_submission.py:67 judge/views/ranked_submission.py:70
 #, python-format
@@ -7634,7 +7633,6 @@ msgstr ""
 msgid "Author:"
 msgid_plural "Authors:"
 msgstr[0] "Tác giả:"
-msgstr[1] "Các tác giả:"
 
 #: templates/problem/import-polygon.html:95
 msgid "Not valid Polygon package"
@@ -7805,7 +7803,6 @@ msgstr "Gửi bài giải"
 msgid "%(counter)s submission left"
 msgid_plural "%(counter)s submissions left"
 msgstr[0] "Còn %(counter)s lần nộp"
-msgstr[1] "Còn %(counter)s lần nộp"
 
 #: templates/problem/problem.html:192
 msgid "0 submissions left"
@@ -7872,7 +7869,6 @@ msgstr "Nguồn bài:"
 msgid "Problem type"
 msgid_plural "Problem types"
 msgstr[0] "Dạng bài"
-msgstr[1] "Dạng bài"
 
 #: templates/problem/problem.html:359
 msgid "Allowed languages"
@@ -7887,7 +7883,6 @@ msgstr "Không có máy chấm %(lang)s đang online"
 msgid "Judge:"
 msgid_plural "Judges:"
 msgstr[0] "Máy chấm"
-msgstr[1] "Các máy chấm"
 
 #: templates/problem/problem.html:396
 msgid "none available"
@@ -9592,3 +9587,296 @@ msgstr "URL rút gọn này không hoạt động."
 
 #~ msgid "Maximum single-case runtime:"
 #~ msgstr "Thời gian chạy test lâu nhất:"
+
+#: templates/widgets/test_data_zip.html
+msgid "Saved ZIP"
+msgstr "ZIP đã lưu"
+
+#: templates/problem/data.html
+msgid "Test data upload"
+msgstr "Tải bộ test"
+
+#: templates/problem/data.html
+msgid "Start an edit session to change test data."
+msgstr "Bắt đầu phiên sửa để chỉnh sửa bộ test."
+
+#: templates/problem/data.html
+msgid "Upload progress"
+msgstr "Tiến độ tải lên"
+
+#: templates/problem/data.html
+msgid "Continue / Retry"
+msgstr "Tiếp tục / Thử lại"
+
+#: templates/problem/data.html
+msgid "Cancel ZIP upload"
+msgstr "Hủy tải ZIP"
+
+#: templates/problem/data.html
+msgid "Cancel the ZIP upload and keep editing test data."
+msgstr "Hủy tải ZIP và tiếp tục sửa bộ test."
+
+#: templates/problem/data.html
+msgid "End edit session"
+msgstr "Kết thúc phiên sửa"
+
+#: templates/problem/data.html
+msgid "End editing and release the problem lock."
+msgstr "Kết thúc phiên sửa để người khác có thể chỉnh sửa bài."
+
+#: templates/problem/data.html
+msgid "Revoke edit session"
+msgstr "Thu hồi phiên sửa"
+
+#: templates/problem/data.html
+msgid "JavaScript is required to edit test data and upload ZIP files."
+msgstr "Cần bật JavaScript để sửa bộ test và tải tệp ZIP lên."
+
+#: judge/utils/test_data_upload.py:39
+msgid "Upload staging is not configured."
+msgstr "Máy chủ chưa cấu hình thư mục tạm để tải lên."
+
+#: judge/utils/test_data_upload.py:98
+msgid "Upload creation was interrupted. Cancel it and select the ZIP again."
+msgstr "Khởi tạo tải lên bị gián đoạn. Hãy hủy và chọn lại tệp ZIP."
+
+#: judge/utils/test_data_upload.py:114
+msgid "Another upload task is active."
+msgstr "Một tác vụ tải lên khác đang chạy."
+
+#: judge/utils/test_data_upload.py:123
+msgid "You cannot edit this problem."
+msgstr "Bạn không có quyền chỉnh sửa bài này."
+
+#: judge/utils/test_data_upload.py:125
+msgid "The problem data cannot be edited."
+msgstr "Không thể chỉnh sửa dữ liệu của bài này."
+
+#: judge/utils/test_data_upload.py:149
+#, python-format
+msgid "Test data is being edited by %s."
+msgstr "Bộ test đang được %s chỉnh sửa."
+
+#: judge/utils/test_data_upload.py:158
+msgid "Start an editing session first."
+msgstr "Hãy bắt đầu phiên sửa trước."
+
+#: judge/utils/test_data_upload.py:164
+msgid "The editing session does not belong to you."
+msgstr "Phiên sửa này không thuộc về bạn."
+
+#: judge/utils/test_data_upload.py:166
+msgid "The editing session has ended. Start a new session."
+msgstr "Phiên sửa đã kết thúc. Hãy bắt đầu phiên mới."
+
+#: judge/views/test_data_upload.py:199 judge/utils/test_data_upload.py:187 judge/utils/test_data_upload.py:181
+msgid "Unknown upload."
+msgstr "Không tìm thấy bản tải lên."
+
+#: judge/utils/test_data_upload.py:189
+msgid "Wait for the ZIP validation to finish."
+msgstr "Vui lòng đợi kiểm tra ZIP hoàn tất."
+
+#: judge/utils/test_data_upload.py:191
+msgid "The uploaded file is missing or has changed."
+msgstr "Tệp đã tải lên bị thiếu hoặc đã thay đổi."
+
+#: judge/utils/test_data_upload.py:200
+msgid "All upload slots are busy. Try again shortly."
+msgstr "Các lượt tải lên đang bận. Vui lòng thử lại sau ít phút."
+
+#: judge/utils/test_data_upload.py:225
+msgid "There is not enough free disk space for this upload."
+msgstr "Máy chủ không đủ dung lượng đĩa trống cho lần tải lên này."
+
+#: judge/utils/test_data_upload.py:243
+msgid "The ZIP directory exceeds the allowed size or entry count."
+msgstr "Mục lục của ZIP vượt giới hạn dung lượng hoặc số lượng mục cho phép."
+
+#: judge/utils/test_data_upload.py:247
+msgid "The ZIP contains too many entries."
+msgstr "Tệp ZIP chứa quá nhiều mục."
+
+#: judge/utils/test_data_upload.py:250 judge/utils/test_data_upload.py:274
+msgid "ZIP validation took too long."
+msgstr "Kiểm tra ZIP vượt thời gian cho phép."
+
+#: judge/utils/test_data_upload.py:257
+msgid "The ZIP contains duplicate or unsafe file names."
+msgstr "ZIP chứa tên tệp trùng lặp hoặc không an toàn."
+
+#: judge/utils/test_data_upload.py:262
+msgid "Links and special files are not supported in ZIP files."
+msgstr "ZIP không được chứa liên kết hoặc tệp đặc biệt."
+
+#: judge/utils/test_data_upload.py:265
+msgid "The ZIP uses encryption or unsupported compression."
+msgstr "ZIP được mã hóa hoặc dùng phương pháp nén không được hỗ trợ."
+
+#: judge/utils/test_data_upload.py:268
+msgid "The ZIP expands beyond the allowed size."
+msgstr "Dung lượng sau giải nén của ZIP vượt giới hạn cho phép."
+
+#: judge/utils/test_data_upload.py:281
+msgid "An entry exceeds its declared size."
+msgstr "Một mục trong ZIP vượt dung lượng đã khai báo."
+
+#: judge/utils/test_data_upload.py:287
+msgid "The ZIP does not contain test files."
+msgstr "ZIP không chứa tệp test."
+
+#: judge/tasks/test_data_upload.py:27
+msgid "This upload session has ended."
+msgstr "Phiên tải lên này đã kết thúc."
+
+#: judge/tasks/test_data_upload.py:60
+msgid "The uploaded file size does not match."
+msgstr "Dung lượng tệp đã tải lên không khớp."
+
+#: judge/tasks/test_data_upload.py:77
+msgid "ZIP validation failed: invalid or unreadable archive."
+msgstr "Kiểm tra ZIP thất bại: tệp không hợp lệ hoặc không đọc được."
+
+#: judge/views/test_data_upload.py:48
+msgid "Expected a JSON object."
+msgstr "Yêu cầu phải chứa một đối tượng JSON."
+
+#: judge/views/test_data_upload.py:56
+msgid "Unknown problem."
+msgstr "Không tìm thấy bài."
+
+#: judge/views/test_data_upload.py:63
+msgid "New resumable uploads are currently disabled."
+msgstr "Hiện chưa cho phép bắt đầu lượt tải lên có thể tiếp tục."
+
+#: judge/views/test_data_upload.py:108
+msgid "Your previous edit session is still active. Continue in its original tab or end it first."
+msgstr "Phiên sửa trước của bạn vẫn còn hiệu lực. Hãy tiếp tục ở tab ban đầu hoặc kết thúc phiên đó trước."
+
+#: judge/views/test_data_upload.py:155
+msgid "Only administrators may revoke editing sessions."
+msgstr "Chỉ quản trị viên mới có thể thu hồi phiên sửa."
+
+#: judge/views/test_data_upload.py:158
+msgid "Unknown session."
+msgstr "Không tìm thấy phiên sửa."
+
+#: judge/views/test_data_upload.py:160
+msgid "The new test data is being published. Wait for it to finish."
+msgstr "Bộ test mới đang được áp dụng. Vui lòng đợi hoàn tất."
+
+#: judge/views/test_data_upload.py:177
+msgid "Choose a ZIP within the allowed file size."
+msgstr "Hãy chọn tệp ZIP có dung lượng trong giới hạn cho phép."
+
+#: judge/views/test_data_upload.py:182
+msgid "Cancel the previous upload before choosing another file."
+msgstr "Hãy hủy lần tải lên trước khi chọn tệp khác."
+
+#: judge/views/test_data_upload.py:221
+msgid "This upload is already being applied."
+msgstr "Bản tải lên này đang được áp dụng."
+
+#: judge/views/test_data_upload.py:237 judge/views/test_data_upload.py:234
+msgid "Invalid upload token."
+msgstr "Mã xác thực tải lên không hợp lệ."
+
+#: judge/views/test_data_upload.py:245
+msgid "The editing session has expired."
+msgstr "Phiên sửa đã hết hạn."
+
+#: judge/views/test_data_upload.py:252
+msgid "Internal upload authentication is not configured."
+msgstr "Máy chủ chưa cấu hình xác thực nội bộ cho tải lên."
+
+#: judge/views/test_data_upload.py:254
+msgid "Internal upload authentication is required."
+msgstr "Cần xác thực nội bộ để tải lên."
+
+#: judge/views/test_data_upload.py:265
+msgid "The upload belongs to a different user."
+msgstr "Bản tải lên thuộc về người dùng khác."
+
+#: judge/views/test_data_upload.py:272
+msgid "This upload cannot be created again."
+msgstr "Không thể khởi tạo lại bản tải lên này."
+
+#: judge/views/test_data_upload.py:285
+msgid "Invalid upload metadata."
+msgstr "Thông tin tải lên không hợp lệ."
+
+#: judge/views/test_data_upload.py:288 judge/views/test_data_upload.py:306
+msgid "The upload is no longer writable."
+msgstr "Không thể ghi thêm dữ liệu vào bản tải lên này."
+
+#: judge/views/test_data_upload.py:290
+msgid "The upload has already finished."
+msgstr "Bản tải lên đã hoàn tất."
+
+#: judge/views/test_data_upload.py:292
+msgid "This upload operation is not allowed."
+msgstr "Không được phép thực hiện thao tác tải lên này."
+
+#: judge/views/test_data_upload.py:299
+msgid "The upload request is too large or has no length."
+msgstr "Yêu cầu tải lên quá lớn hoặc thiếu thông tin dung lượng."
+
+#: judge/views/test_data_upload.py:323 judge/views/test_data_upload.py:326
+msgid "Invalid hook payload."
+msgstr "Dữ liệu thông báo tải lên không hợp lệ."
+
+#: judge/views/test_data_upload.py:345
+msgid "The hook refers to a different upload."
+msgstr "Thông báo tải lên tham chiếu đến bản tải lên khác."
+
+#: judge/views/test_data_upload.py:361
+msgid "The upload has ended."
+msgstr "Lượt tải lên đã kết thúc."
+
+#: judge/views/test_data_upload.py:368
+msgid "The upload is incomplete."
+msgstr "Tải lên chưa hoàn tất."
+
+#: judge/utils/problem_data_publication.py:49
+msgid "Use the test data editor to update a versioned problem."
+msgstr "Hãy dùng trang sửa bộ test để cập nhật bài có dữ liệu theo phiên bản."
+
+#: judge/utils/problem_data_publication.py:146
+msgid "An existing test data attachment is missing."
+msgstr "Thiếu một tệp đính kèm của bộ test hiện tại."
+
+#: judge/utils/problem_data_publication.py:154
+msgid "Not enough disk space to prepare the new test data."
+msgstr "Máy chủ không đủ dung lượng đĩa để chuẩn bị bộ test mới."
+
+#: judge/utils/problem_data_publication.py:162
+msgid "Unsupported test data attachment extension."
+msgstr "Định dạng tệp đính kèm của bộ test không được hỗ trợ."
+
+#: judge/utils/problem_data_publication.py:200
+msgid "Invalid editing session."
+msgstr "Phiên sửa không hợp lệ."
+
+#: judge/utils/problem_data_publication.py:203
+msgid "This publication failed. Start a new editing session."
+msgstr "Áp dụng bộ test thất bại. Hãy bắt đầu phiên sửa mới."
+
+#: judge/utils/problem_data_publication.py:220 judge/utils/problem_data_publication.py:223
+msgid "Invalid testcase."
+msgstr "Testcase không hợp lệ."
+
+#: judge/utils/problem_data_publication.py:227
+msgid "Add at least one testcase before saving the test data."
+msgstr "Hãy thêm ít nhất một testcase trước khi lưu bộ test."
+
+#: judge/utils/problem_data_publication.py:243
+msgid "The test configuration is empty."
+msgstr "Cấu hình bộ test đang trống."
+
+#: judge/utils/problem_data_publication.py:257
+msgid "The editing session no longer owns publication."
+msgstr "Phiên sửa không còn quyền áp dụng bộ test."
+
+#: judge/utils/problem_data_publication.py:291
+msgid "This revision is not available for publication."
+msgstr "Không thể áp dụng phiên bản bộ test này."

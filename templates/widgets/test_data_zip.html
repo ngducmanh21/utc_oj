@@ -1,0 +1,11 @@
+{% if widget.is_initial %}
+    <div id="test-data-zip-current">
+        {{ _('Saved ZIP') }}: <a href="{{ widget.value.url }}">{{ widget.filename }}</a>
+        {% if not widget.required %}
+            <input type="checkbox" name="{{ widget.checkbox_name }}" id="{{ widget.checkbox_id }}"{% if widget.attrs.disabled %} disabled{% endif %}>
+            <label for="{{ widget.checkbox_id }}">{{ widget.clear_checkbox_label }}</label>
+        {% endif %}
+    </div>
+{% endif %}
+<div id="test-data-zip-pending" role="status" aria-live="polite" hidden></div>
+{{ widget.input }}

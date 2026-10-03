@@ -1,0 +1,25 @@
+#test-data-upload {
+    margin-bottom: 1.2em;
+    padding: 1em;
+    border: 1px solid var(--border-color, #aaa);
+    border-radius: 5px;
+}
+
+#test-data-upload h3 { margin: 0 0 .65em; }
+#test-data-upload p { margin: .5em 0; overflow-wrap: anywhere; }
+#test-upload-status { font-weight: bold; }
+#test-upload-progress { width: 100%; height: 1.2em; accent-color: #287cbb; }
+#test-upload-detail, #test-upload-confirmed, #test-upload-limit { font-variant-numeric: tabular-nums; }
+#test-upload-confirmed, #test-upload-limit { font-size: .9em; }
+#test-data-upload [hidden] { display: none !important; }
+#test-data-zip-current[hidden], #test-data-zip-pending[hidden] { display: none !important; }
+.test-upload-actions { display: flex; gap: .5em; flex-wrap: wrap; margin-top: .8em; }
+.test-upload-actions button { white-space: normal; }
+.test-upload-progress-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+#test-data-fields { min-width: 0; border: 0; margin: 0; padding: 0; }
+#test-data-fields:disabled { opacity: .65; }
+#test-data-upload[data-state=error], #test-data-upload[data-state=locked] { border-color: #b64a32; }
+
+@media (prefers-reduced-motion: reduce) {
+    #test-upload-progress { animation: none; }
+}

@@ -10,11 +10,13 @@ from judge.models.problem import LanguageLimit, License, OrganizationProblemTag,
     ProblemGroup, ProblemTranslation, ProblemType, Solution, SubmissionSourceAccess, TranslatedProblemQuerySet
 from judge.models.problem_data import CHECKERS, ProblemData, ProblemTestCase, problem_data_storage, \
     problem_directory_file
+from judge.models.problem_data_revision import ProblemDataRevision
 from judge.models.profile import Badge, Organization, OrganizationMonthlyUsage, OrganizationQuota, \
     OrganizationRequest, Profile, WebAuthnCredential
 from judge.models.runtime import Judge, Language, RuntimeVersion
 from judge.models.submission import SUBMISSION_RESULT, Submission, SubmissionSource, SubmissionTestCase
 from judge.models.tag import Tag, TagData, TagGroup, TagProblem
+from judge.models.test_data_upload import ProblemDataEditSession, TestDataUpload
 from judge.models.ticket import GeneralIssue, Ticket, TicketMessage
 
 revisions.register(Profile, exclude=['points', 'last_access', 'ip', 'rating'])

@@ -8,7 +8,7 @@ from random import randrange
 
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
-from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import BooleanField, Case, Prefetch, Q, When
 from django.db.utils import ProgrammingError
@@ -1043,6 +1043,8 @@ class ProblemImportPolygon(PermissionRequiredMixin, TitleMixin, FormView):
                 importer.run()
             except ImportPolygonError as e:
                 return generic_message(request, _('Failed to import problem'), str(e), status=400)
+            except ValidationError as e:
+                return generic_message(request, _('Problem data is locked'), str(e), status=409)
 
             return HttpResponseRedirect(reverse('problem_detail', args=[code]))
 
@@ -1141,6 +1143,8 @@ class ProblemEdit(ProblemMixin, TitleMixin, UpdateView):
     def dispatch(self, request, *args, **kwargs):
         try:
             return super(ProblemEdit, self).dispatch(request, *args, **kwargs)
+        except ValidationError as error:
+            return generic_message(request, _('Problem data is locked'), str(error), status=409)
         except PermissionDenied:
             return generic_message(request, _("Can't edit problem"),
                                    _('You are not allowed to edit this problem.'), status=403)
@@ -1203,6 +1207,8 @@ class ProblemDelete(ProblemMixin, TitleMixin, DetailView):
     def dispatch(self, request, *args, **kwargs):
         try:
             return super().dispatch(request, *args, **kwargs)
+        except ValidationError as error:
+            return generic_message(request, _('Problem data is locked'), str(error), status=409)
         except PermissionDenied:
             return generic_message(request, _("Can't delete problem"),
                                    _('You are not allowed to delete this problem.'), status=403)

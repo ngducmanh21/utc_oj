@@ -153,7 +153,13 @@ class ProblemDataStorage(Storage):
         return self._get_backend(name).exists(name)
 
     def delete(self, name):
-        return self._get_backend(name).delete(name)
+        # Publication keeps old ZIP/checker files for submissions already in flight.
+        # This also protects them from django-cleanup after a FileField replacement.
+        backend = self._get_backend(name)
+        code, *rest = split_path_first(name)
+        if rest and rest[0] != 'init.yml' and backend.exists('%s/.utcoj-retain-revisions' % code):
+            return
+        return backend.delete(name)
 
     def size(self, name):
         return self._get_backend(name).size(name)
@@ -176,6 +182,7 @@ class ProblemDataStorage(Storage):
             data = problem.data_files
         except ProblemData.DoesNotExist:
             return metadata
+        metadata['archive'] = data.zipfile.name or ''
         if not data.zipfile or not self.exists(data.zipfile.name):
             return metadata
 
@@ -194,6 +201,8 @@ class ProblemDataStorage(Storage):
         return os.path.join(metadata_dir, f'{problem.code}_metadata.json')
 
     def get_problem_metadata(self, problem):
+        from judge.models import ProblemData
+
         path = self._get_metadata_path(problem)
         if path is None:
             return self._build_metadata(problem)
@@ -201,6 +210,9 @@ class ProblemDataStorage(Storage):
         try:
             with open(path) as f:
                 metadata = json.load(f)
+            current_archive = ProblemData.objects.filter(problem=problem).values_list('zipfile', flat=True).first()
+            if metadata.get('archive') != (current_archive or ''):
+                raise ValueError('Metadata belongs to a previous archive.')
             # we expect integers as testcase keys
             metadata['testcases'] = {int(k): v for k, v in metadata['testcases'].items()}
             return metadata

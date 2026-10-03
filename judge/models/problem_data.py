@@ -116,9 +116,10 @@ class ProblemData(models.Model):
         self.zipfile_size = total_size
 
     def save(self, *args, **kwargs):
-        # Update zipfile size before saving
-        self.update_zipfile_size()
-        super(ProblemData, self).save(*args, **kwargs)
+        from judge.utils.problem_data_publication import guarded_data_change
+        with guarded_data_change(self.problem_id):
+            self.update_zipfile_size()
+            super(ProblemData, self).save(*args, **kwargs)
 
     def _update_code(self, original, new):
         try:
@@ -141,6 +142,11 @@ class ProblemData(models.Model):
 
 
 class ProblemTestCase(models.Model):
+    def save(self, *args, **kwargs):
+        from judge.utils.problem_data_publication import guarded_data_change
+        with guarded_data_change(self.dataset_id):
+            super().save(*args, **kwargs)
+
     dataset = models.ForeignKey('Problem', verbose_name=_('problem data set'), related_name='cases',
                                 on_delete=models.CASCADE)
     order = models.IntegerField(verbose_name=_('case position'))
