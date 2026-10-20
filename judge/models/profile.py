@@ -302,6 +302,12 @@ class Profile(models.Model):
                                                               _('Scratch codes must be empty or a JSON array of '
                                                                 '16-character Base32 codes.'))])
     last_totp_timecode = models.IntegerField(verbose_name=_('last TOTP timecode'), default=0)
+    rotate_password_on_login = models.BooleanField(
+        default=False, verbose_name=_('rotate password after login'),
+        help_text=_('Keep the authenticated session and replace the password after a complete login.'),
+    )
+    account_session_epoch = models.PositiveBigIntegerField(default=0, editable=False)
+    password_rotated_at = models.DateTimeField(null=True, blank=True, editable=False)
     api_token = models.CharField(max_length=64, null=True, verbose_name=_('API token'),
                                  help_text=_('64-character hex-encoded API access token.'),
                                  validators=[RegexValidator('^[a-f0-9]{64}$',
@@ -550,6 +556,7 @@ class Profile(models.Model):
             ('long_contest_duration', _('Can set long contest duration')),
             ('create_mass_testcases', _('Can create unlimitted number of testcases for a problem')),
             ('ban_user', _('Ban users')),
+            ('manage_login_password_rotation', _('Manage login password rotation')),
         )
         verbose_name = _('user profile')
         verbose_name_plural = _('user profiles')

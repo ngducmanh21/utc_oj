@@ -17,6 +17,7 @@ from requests.exceptions import HTTPError
 
 from judge.ip_auth import IPBasedAuthBackend
 from judge.models import MiscConfig, Organization
+from judge.utils.managed_login import session_epoch_matches
 
 try:
     import uwsgi
@@ -51,6 +52,12 @@ class DMOJLoginMiddleware(object):
             if uwsgi:
                 uwsgi.set_logvar('username', request.user.username)
                 uwsgi.set_logvar('language', request.LANGUAGE_CODE)
+
+            if (not getattr(request, '_api_authenticated', False) and
+                    not session_epoch_matches(request.session, profile)):
+                auth.logout(request)
+                request.profile = None
+                return HttpResponseRedirect(reverse('auth_login') + '?next=' + quote(request.get_full_path()))
 
             logout_path = reverse('auth_logout')
             login_2fa_path = reverse('login_2fa')
@@ -176,6 +183,7 @@ class APIMiddleware(object):
                 raise HTTPError()
 
             request._cached_user = request.user
+            request._api_authenticated = True
             request.csrf_processing_done = True
             request.session['2fa_passed'] = True
         except (User.DoesNotExist, HTTPError):

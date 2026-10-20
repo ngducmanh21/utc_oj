@@ -5,6 +5,7 @@ from judge.models.comment import Comment, CommentLock, CommentVote
 from judge.models.contest import Contest, ContestAnnouncement, ContestMoss, ContestParticipation, ContestProblem, \
     ContestSubmission, ContestTag, Rating
 from judge.models.interface import BlogPost, BlogPostTag, BlogVote, MiscConfig, NavigationBar, validate_regex
+from judge.models.managed_account import ManagedAccountEvent
 from judge.models.notification import Notification, make_notification
 from judge.models.problem import LanguageLimit, License, OrganizationProblemTag, Problem, ProblemClarification, \
     ProblemGroup, ProblemTranslation, ProblemType, Solution, SubmissionSourceAccess, TranslatedProblemQuerySet
@@ -19,7 +20,8 @@ from judge.models.tag import Tag, TagData, TagGroup, TagProblem
 from judge.models.test_data_upload import ProblemDataEditSession, TestDataUpload
 from judge.models.ticket import GeneralIssue, Ticket, TicketMessage
 
-revisions.register(Profile, exclude=['points', 'last_access', 'ip', 'rating'])
+revisions.register(Profile, exclude=['points', 'last_access', 'ip', 'rating', 'rotate_password_on_login',
+                                     'account_session_epoch', 'password_rotated_at'])
 revisions.register(Problem, follow=['language_limits'])
 revisions.register(LanguageLimit)
 revisions.register(Contest, follow=['contest_problems'])

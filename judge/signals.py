@@ -3,6 +3,7 @@ import os
 from typing import Optional
 
 from django.conf import settings
+from django.contrib.auth.signals import user_logged_in
 from django.contrib.flatpages.models import FlatPage
 from django.core.cache import cache
 from django.core.cache.utils import make_template_fragment_key
@@ -17,7 +18,13 @@ from judge.models import BlogPost, Comment, Contest, ContestAnnouncement, Contes
     EFFECTIVE_MATH_ENGINES, Judge, Language, License, MiscConfig, Organization, Problem, Profile, Submission, \
     WebAuthnCredential
 from judge.tasks import on_new_comment
+from judge.utils.managed_login import stamp_session_epoch
 from judge.views.register import RegistrationView
+
+
+@receiver(user_logged_in, dispatch_uid='judge.stamp_account_session_epoch')
+def account_session_epoch_login(sender, request, user, **kwargs):
+    stamp_session_epoch(request, user)
 
 
 def get_pdf_path(basename: str) -> Optional[str]:
