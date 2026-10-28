@@ -565,7 +565,8 @@ class TestDataUploadTests(TestCase):
         revoked = post('session/%s/revoke/' % replacement['id'])
         self.assertEqual(revoked['session']['status'], 'REVOKED')
 
-    @override_settings(DEBUG=True, DMOJ_TEST_UPLOAD_LOCAL_PROXY_URL='http://127.0.0.1:8080')
+    @override_settings(DEBUG=True, ALLOWED_HOSTS=['127.0.0.1'],
+                       DMOJ_TEST_UPLOAD_LOCAL_PROXY_URL='http://127.0.0.1:8080')
     def test_local_data_editor_redirects_to_upload_proxy(self):
         client = Client()
         client.force_login(self.user)
