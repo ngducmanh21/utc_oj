@@ -160,8 +160,8 @@ class LoginPolicyTests(ManagedAccountData, TestCase):
     def test_invalid_inputs_leave_account_unchanged(self):
         inputs = [
             {'enabled': 1}, {'enabled': 'true'}, {'expected_epoch': True}, {'expected_epoch': -1},
-            {'expected_epoch': '0'}, {'expected_epoch': MAX_SESSION_EPOCH + 1}, {'reason': ''},
-            {'reason': '   '}, {'reason': 'x' * 256}, {'reason': None}, {'user_id': True}, {'user_id': 0},
+            {'expected_epoch': '0'}, {'expected_epoch': MAX_SESSION_EPOCH + 1},
+            {'reason': 'x' * 256}, {'reason': None}, {'user_id': True}, {'user_id': 0},
         ]
         for override in inputs:
             with self.subTest(override=override), self.assertRaises(ValidationError):
@@ -171,6 +171,16 @@ class LoginPolicyTests(ManagedAccountData, TestCase):
                 })
         self.assertFalse(ManagedAccountEvent.objects.exists())
         self.assertEqual(Profile.objects.get(user=self.user).account_session_epoch, 0)
+
+    def test_policy_can_change_without_reason_and_still_records_audit(self):
+        state = set_login_policy(self.actor, self.user.pk, True, 0)
+        self.assertTrue(state.enabled)
+        event = ManagedAccountEvent.objects.get()
+        self.assertEqual(event.reason, '')
+        self.assertEqual(event.actor_id, self.actor.pk)
+        self.assertEqual((event.previous_epoch, event.epoch), (0, 1))
+        set_login_policy(self.actor, self.user.pk, False, 1, reason='   ')
+        self.assertEqual(ManagedAccountEvent.objects.first().reason, '')
 
     def test_epoch_cannot_wrap_or_decrease(self):
         Profile.objects.filter(user=self.user).update(account_session_epoch=MAX_SESSION_EPOCH)
@@ -224,6 +234,33 @@ class LoginPolicyTests(ManagedAccountData, TestCase):
         fields = Version.objects.get_for_object(self.user.profile).first().field_dict
         for name in ('rotate_password_on_login', 'account_session_epoch', 'password_rotated_at'):
             self.assertNotIn(name, fields)
+
+    def test_stale_profile_save_cannot_restore_policy_or_revoked_token(self):
+        self.user.profile.generate_api_token()
+        stale_profile = Profile.objects.get(user=self.user)
+        self.change()
+        stale_profile.about = 'Updated biography'
+        stale_profile.save()
+        profile = Profile.objects.get(user=self.user)
+        self.assertEqual(profile.about, 'Updated biography')
+        self.assertTrue(profile.rotate_password_on_login)
+        self.assertEqual(profile.account_session_epoch, 1)
+        self.assertIsNone(profile.api_token)
+
+    def test_reverting_profile_preserves_current_policy_and_revocation(self):
+        self.user.profile.generate_api_token()
+        with revisions.create_revision():
+            self.user.profile.about = 'Old biography'
+            self.user.profile.save()
+        version = Version.objects.get_for_object(self.user.profile).first()
+        self.change()
+        Profile.objects.filter(user=self.user).update(about='New biography')
+        version.revert()
+        profile = Profile.objects.get(user=self.user)
+        self.assertEqual(profile.about, 'Old biography')
+        self.assertTrue(profile.rotate_password_on_login)
+        self.assertEqual(profile.account_session_epoch, 1)
+        self.assertIsNone(profile.api_token)
 
 
 @override_settings(DEFAULT_USER_LANGUAGE='CPP17')

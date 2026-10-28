@@ -9898,3 +9898,116 @@ msgstr "Sử dụng email %(domains)s."
 #: templates/registration/oauth.html
 msgid "Sign up with an external account"
 msgstr "Đăng ký bằng tài khoản bên ngoài"
+
+#: judge/utils/managed_login.py templates/registration/login.html
+msgid "This sign-in is no longer valid. Sign in again. If your issued password no longer works, ask the invigilator for a new one."
+msgstr "Phiên đăng nhập này không còn hợp lệ. Hãy đăng nhập lại. Nếu mật khẩu được cấp không còn dùng được, hãy nhờ giám thị cấp mật khẩu mới."
+
+#: judge/views/user.py judge/views/two_factor.py
+msgid "Unable to sign in right now. Please try again."
+msgstr "Hiện chưa thể đăng nhập. Vui lòng thử lại."
+
+msgid "Rotate password after login"
+msgstr "Tự đổi mật khẩu sau đăng nhập"
+
+msgid "rotate password after login"
+msgstr "Tự đổi mật khẩu sau đăng nhập"
+
+msgid "Manage login password rotation"
+msgstr "Quản lý tự đổi mật khẩu sau đăng nhập"
+
+msgid "Contest account"
+msgstr "Tài khoản thi"
+
+msgid "Last automatic password rotation"
+msgstr "Lần tự đổi mật khẩu gần nhất"
+
+msgid "Enabled"
+msgstr "Bật"
+
+msgid "Disabled"
+msgstr "Tắt"
+
+msgid "The issued password works until the next completed login. The contestant keeps that session; if it is lost, an invigilator must set a new password."
+msgstr "Mật khẩu được cấp chỉ dùng tới lần đăng nhập thành công tiếp theo. Sau đó thí sinh giữ phiên hiện tại; mất phiên cần giám thị cấp lại mật khẩu."
+
+msgid "Disable login password rotation before promoting this account."
+msgstr "Hãy tắt tự đổi mật khẩu trước khi cấp quyền nhân viên hoặc siêu quản trị cho tài khoản này."
+
+msgid "Automatic rotation is disabled. The old password is not restored. <a href=\"{}\">Set a new password</a> if needed."
+msgstr "Đã tắt tự đổi mật khẩu. Mật khẩu cũ không được khôi phục. <a href=\"{}\">Đặt mật khẩu mới</a> nếu cần."
+
+msgid "Unable to save account changes right now. Please try again."
+msgstr "Hiện chưa thể lưu thay đổi tài khoản. Vui lòng thử lại."
+
+msgid "Use an administrator session for this operation."
+msgstr "Hãy dùng phiên đăng nhập của quản trị viên để thực hiện thao tác này."
+
+msgid "Log in as an administrator."
+msgstr "Hãy đăng nhập bằng tài khoản quản trị viên."
+
+msgid "End impersonation before managing login policies."
+msgstr "Hãy kết thúc giả lập người dùng trước khi quản lý chế độ đăng nhập."
+
+msgid "Your session expired. Log in again."
+msgstr "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại."
+
+msgid "You do not have permission to manage login policies."
+msgstr "Bạn không có quyền quản lý chế độ đăng nhập."
+
+msgid "You do not have permission to manage this login policy."
+msgstr "Bạn không có quyền quản lý chế độ đăng nhập của tài khoản này."
+
+msgid "Complete two-factor authentication first."
+msgstr "Hãy hoàn tất xác thực hai yếu tố trước."
+
+msgid "Change your password before managing login policies."
+msgstr "Hãy đổi mật khẩu trước khi quản lý chế độ đăng nhập."
+
+msgid "Expected a JSON policy object."
+msgstr "Cần gửi đối tượng JSON gồm enabled và expected_epoch; reason là tùy chọn."
+
+msgid "Use GET or PATCH for login policies."
+msgstr "Dùng GET hoặc PATCH để đọc hoặc cập nhật chế độ đăng nhập."
+
+msgid "Account not found."
+msgstr "Không tìm thấy tài khoản."
+
+msgid "Invalid user ID."
+msgstr "ID tài khoản không hợp lệ."
+
+msgid "Invalid session epoch."
+msgstr "Số phiên không hợp lệ."
+
+msgid "The optional reason must be text of at most 255 characters."
+msgstr "Lý do là tùy chọn; nếu gửi thì phải là chuỗi dài tối đa 255 ký tự."
+
+msgid "Login password rotation cannot be managed for staff or superusers."
+msgstr "Không thể bật hoặc tắt tự đổi mật khẩu cho nhân viên hoặc siêu quản trị."
+
+msgid "The account is disabled or banned."
+msgstr "Tài khoản đang bị vô hiệu hóa hoặc bị cấm."
+
+msgid "The login policy has changed. Reload before saving."
+msgstr "Chế độ đăng nhập đã thay đổi. Hãy tải lại trang trước khi lưu."
+
+msgid "The login policy must be enabled or disabled."
+msgstr "Trạng thái tự đổi mật khẩu phải là bật hoặc tắt."
+
+msgid "The session epoch cannot be increased."
+msgstr "Không thể tăng số phiên của tài khoản."
+
+msgid "Unable to check the administrator session."
+msgstr "Hiện chưa thể kiểm tra phiên đăng nhập của quản trị viên."
+
+msgid "Your security token expired. Reload the page and try again."
+msgstr "Mã bảo vệ đã hết hạn. Hãy tải lại trang và thử lại."
+
+msgid "Sign-in settings are managed by the invigilator. Contact the invigilator if you need a new password."
+msgstr "Giám thị quản lý thông tin đăng nhập của tài khoản này. Hãy liên hệ giám thị nếu bạn cần mật khẩu mới."
+
+msgid "Sign-in settings cannot be changed while impersonating another account."
+msgstr "Không thể thay đổi thông tin đăng nhập khi đang dùng chế độ giả danh tài khoản khác."
+
+msgid "Your sign-in has changed. Sign in again before changing credentials."
+msgstr "Thông tin đăng nhập đã thay đổi. Hãy đăng nhập lại trước khi thay đổi mật khẩu hoặc phương thức xác thực."

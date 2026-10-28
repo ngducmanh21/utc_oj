@@ -9,15 +9,19 @@ from django.contrib import auth
 from django.contrib.auth.models import User
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.cache import cache
+from django.db import DatabaseError
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import Resolver404, resolve, reverse
 from django.utils.encoding import force_bytes
+from django.utils.translation import gettext as _
 from requests.exceptions import HTTPError
 
 from judge.ip_auth import IPBasedAuthBackend
 from judge.models import MiscConfig, Organization
-from judge.utils.managed_login import session_epoch_matches
+from judge.utils.managed_login import COMPLETED_LOGIN_KEY, ManagedLoginRejected, PENDING_LOGIN_KEY, \
+    discard_login_session, session_epoch_matches, validate_pending_login
+from judge.views.login_policy import policy_error, policy_session_error
 
 try:
     import uwsgi
@@ -35,6 +39,7 @@ class ShortCircuitMiddleware:
         except Resolver404:
             callback, args, kwargs = None, None, None
 
+        request.login_policy_api = getattr(callback, 'login_policy_api', False)
         if getattr(callback, 'short_circuit_middleware', False):
             return callback(request, *args, **kwargs)
         return self.get_response(request)
@@ -47,6 +52,15 @@ class DMOJLoginMiddleware(object):
     def __call__(self, request):
         # Don't require user to change their password in contest mode
         request.official_contest_mode = settings.VNOJ_OFFICIAL_CONTEST_MODE
+        if getattr(request, 'login_policy_api', False):
+            try:
+                error = policy_session_error(request)
+                if error is not None:
+                    return error
+                request.profile = request.user.profile
+            except DatabaseError:
+                return policy_error('unavailable', _('Unable to check the administrator session.'), 503)
+            return self.get_response(request)
         if request.user.is_authenticated:
             profile = request.profile = request.user.profile
             if uwsgi:
@@ -65,7 +79,19 @@ class DMOJLoginMiddleware(object):
             change_password_path = reverse('password_change')
             change_password_done_path = reverse('password_change_done')
             has_2fa = profile.is_totp_enabled or profile.is_webauthn_enabled
-            if (has_2fa and not request.session.get('2fa_passed', False) and
+            pending_login = PENDING_LOGIN_KEY in request.session
+            if (not getattr(request, '_api_authenticated', False) and
+                    (pending_login or profile.rotate_password_on_login)):
+                try:
+                    if pending_login:
+                        validate_pending_login(request, request.user, profile)
+                    elif (type(request.session.get(COMPLETED_LOGIN_KEY)) is not int or
+                          request.session[COMPLETED_LOGIN_KEY] != profile.account_session_epoch):
+                        raise ManagedLoginRejected()
+                except ManagedLoginRejected:
+                    discard_login_session(request)
+                    return HttpResponseRedirect(reverse('auth_login') + '?managed-login-expired=1')
+            if ((pending_login or (has_2fa and not request.session.get('2fa_passed', False))) and
                     request.path not in (login_2fa_path, logout_path, webauthn_path) and
                     not request.path.startswith(settings.STATIC_URL)):
                 return HttpResponseRedirect(login_2fa_path + '?next=' + quote(request.get_full_path()))
@@ -160,6 +186,8 @@ class APIMiddleware(object):
 
     def __call__(self, request):
         full_token = request.headers.get('authorization', '')
+        if full_token and getattr(request, 'login_policy_api', False):
+            return policy_error('session_required', _('Use an administrator session for this operation.'), 403)
         if not full_token:
             return self.get_response(request)
 
@@ -171,19 +199,22 @@ class APIMiddleware(object):
 
         try:
             id, secret = struct.unpack('>I32s', base64.urlsafe_b64decode(token.group(1)))
-            request.user = User.objects.get(id=id)
+            user = User.objects.select_related('profile').get(id=id)
+            profile = user.profile
 
-            # User hasn't generated a token
-            if not request.user.profile.api_token:
+            # Policy must also be checked when a token survives in storage.
+            # Do not mark authentication/CSRF/2FA as passed before this check.
+            if not user.is_active or profile.rotate_password_on_login or not profile.api_token:
                 raise HTTPError()
 
             # Token comparison
             digest = hmac.new(force_bytes(settings.SECRET_KEY), msg=secret, digestmod='sha256').hexdigest()
-            if not hmac.compare_digest(digest, request.user.profile.api_token):
+            if not hmac.compare_digest(digest, profile.api_token):
                 raise HTTPError()
 
-            request._cached_user = request.user
+            request.user = request._cached_user = user
             request._api_authenticated = True
+            request._api_token_digest = digest
             request.csrf_processing_done = True
             request.session['2fa_passed'] = True
         except (User.DoesNotExist, HTTPError):

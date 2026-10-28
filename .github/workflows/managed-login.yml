@@ -1,0 +1,77 @@
+name: managed-login integration
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/managed-login.yml'
+      - 'dmoj/**'
+      - 'judge/**'
+      - 'templates/**'
+      - 'locale/**'
+      - 'tests/browser/**'
+      - 'tests/integration/**'
+      - 'requirements.txt'
+  push:
+    paths:
+      - '.github/workflows/managed-login.yml'
+      - 'dmoj/**'
+      - 'judge/**'
+      - 'templates/**'
+      - 'locale/**'
+      - 'tests/browser/**'
+      - 'tests/integration/**'
+      - 'requirements.txt'
+
+permissions:
+  contents: read
+
+jobs:
+  browser-and-operations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: dmoj
+        ports:
+          - 13306:3306
+        options: >-
+          --health-cmd="mysqladmin ping" --health-interval=10s
+          --health-timeout=5s --health-retries=3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies and Chromium
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gettext default-libmysqlclient-dev default-mysql-client
+          python -m pip install wheel "setuptools<82"
+          python -m pip install -r requirements.txt -r tests/browser/requirements.txt
+          python -m playwright install --with-deps chromium
+          cp .ci.settings.py dmoj/local_settings.py
+          python manage.py compilemessages -l vi
+          python manage.py compilejsi18n
+      - name: Run browser and SQL rollback acceptance tests
+        shell: bash
+        env:
+          UTCOJ_BROWSER_CHANNEL: chromium
+          UTCOJ_BROWSER_ARTIFACTS: ${{ runner.temp }}/managed-login-m5
+        run: |
+          mkdir -p "$UTCOJ_BROWSER_ARTIFACTS"
+          python manage.py test tests.browser.managed_login tests.integration.managed_login \
+            --settings=dmoj.managed_login_test_settings --noinput --verbosity=2 \
+            2>&1 | tee "$UTCOJ_BROWSER_ARTIFACTS/acceptance.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: managed-login-m5
+          path: ${{ runner.temp }}/managed-login-m5
+          if-no-files-found: ignore
+          retention-days: 7

@@ -39,17 +39,20 @@ def get_pp_breakdown(user, start=0, end=settings.DMOJ_PP_ENTRIES):
                        NOT judge_problem.is_organization_private AND
                        judge_submission.points IS NOT NULL AND
                        judge_submission.user_id = %s)
-                GROUP BY judge_problem.id
+                GROUP BY judge_problem.id, judge_problem.name, judge_problem.code
                 HAVING MAX(judge_submission.points) > 0.0
             ) AS max_points_table
-            {join_type} judge_submission ON (
-                judge_submission.problem_id = max_points_table.problem_id AND
-                judge_submission.points = max_points_table.max_points AND
-                judge_submission.user_id = %s
+            {join_type} judge_submission ON judge_submission.id = (
+                SELECT best_submission.id
+                FROM judge_submission AS best_submission
+                WHERE best_submission.problem_id = max_points_table.problem_id AND
+                      best_submission.points = max_points_table.max_points AND
+                      best_submission.user_id = %s
+                ORDER BY best_submission.date DESC, best_submission.id DESC
+                LIMIT 1
             )
             {join_type} judge_language ON (judge_submission.language_id = judge_language.id)
-            GROUP BY max_points_table.problem_id
-            ORDER BY max_points DESC, judge_submission.date DESC
+            ORDER BY max_points DESC, judge_submission.date DESC, judge_submission.id DESC
             LIMIT %s OFFSET %s
         """, (user.id, user.id, end - start + 1, start))
         data = cursor.fetchall()

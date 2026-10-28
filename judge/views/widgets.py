@@ -105,6 +105,9 @@ def static_uploader(static_file):
 
 
 def csrf_failure(request: HttpRequest, reason=''):
+    if request.resolver_match and getattr(request.resolver_match.func, 'login_policy_api', False):
+        from judge.views.login_policy import policy_error
+        return policy_error('csrf_failed', _('Your security token expired. Reload the page and try again.'), 403)
     if request.resolver_match and request.resolver_match.func.__module__ == 'judge.views.test_data_upload':
         return JsonResponse({
             'error': {'code': 'csrf_failed', 'message': 'Your security token expired. Reload the page and try again.'},

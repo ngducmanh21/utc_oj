@@ -1,13 +1,19 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as OldUserAdmin
-from django.contrib.auth.models import Permission
+from django.contrib.auth.models import Permission, User
+from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.forms import ModelForm
 from django.urls import reverse_lazy
 from django.utils.html import format_html
 from django.utils.translation import gettext, gettext_lazy as _, ngettext
 from reversion.admin import VersionAdmin
 
+from judge.admin.managed_login import LoginPolicyFilter, ManagedLoginUserAdminMixin
 from judge.models import Profile, WebAuthnCredential
+from judge.utils.managed_login import locked_managed_account
+from judge.utils.user_permissions import PRIVILEGED_USER_FIELDS, admin_actor, can_administer_user, \
+    check_user_admin_write
 from judge.utils.views import NoBatchDeleteMixin
 from judge.widgets import AdminAceWidget, AdminMartorWidget, AdminSelect2MultipleWidget, AdminSelect2Widget
 
@@ -15,9 +21,10 @@ from judge.widgets import AdminAceWidget, AdminMartorWidget, AdminSelect2Multipl
 class ProfileForm(ModelForm):
     def __init__(self, *args, **kwargs):
         super(ProfileForm, self).__init__(*args, **kwargs)
-        self.fields['display_badge'].queryset = self.instance.badges.all()
-        self.fields['display_badge'].required = False
-        if 'current_contest' in self.base_fields:
+        if 'display_badge' in self.fields:
+            self.fields['display_badge'].queryset = self.instance.badges.all()
+            self.fields['display_badge'].required = False
+        if 'current_contest' in self.fields:
             # form.fields['current_contest'] does not exist when the user has only view permission on the model.
             self.fields['current_contest'].queryset = self.instance.contest_history.select_related('contest') \
                 .only('contest__name', 'user_id', 'virtual')
@@ -78,6 +85,50 @@ class ProfileAdmin(NoBatchDeleteMixin, VersionAdmin):
     def has_add_permission(self, request, obj=None):
         return False
 
+    def has_view_permission(self, request, obj=None):
+        actor = admin_actor(request)
+        return (actor.has_perm('judge.view_profile') or actor.has_perm('judge.change_profile')) and (
+            obj is None or can_administer_user(actor, obj.user)
+        )
+
+    def has_change_permission(self, request, obj=None):
+        actor = admin_actor(request)
+        return actor.has_perm('judge.change_profile') and (obj is None or can_administer_user(actor, obj.user))
+
+    def has_delete_permission(self, request, obj=None):
+        actor = admin_actor(request)
+        return actor.has_perm('judge.delete_profile') and (obj is None or (
+            can_administer_user(actor, obj.user) and (actor.is_superuser or not obj.user.is_staff)
+        ))
+
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        if request.method != 'POST' or object_id is None:
+            return super().changeform_view(request, object_id, form_url, extra_context)
+        profile = self.get_object(request, object_id)
+        if profile is None:
+            raise PermissionDenied()
+        with locked_managed_account(request.user, profile.user_id, ('judge.change_profile',)) as (
+            actor, target, profile,
+        ):
+            request._account_admin_actor = actor
+            if (not can_administer_user(actor, target) or '_impersonate' in request.session or
+                    (not actor.is_superuser and 'user' in request.POST)):
+                raise PermissionDenied()
+            return super().changeform_view(request, object_id, form_url, extra_context)
+
+    def delete_model(self, request, obj):
+        with locked_managed_account(request.user, obj.user_id, ('judge.delete_profile',)) as (actor, target, profile):
+            if not can_administer_user(actor, target) or (target.is_staff and not actor.is_superuser):
+                raise PermissionDenied()
+            profile.delete()
+
+    def revision_view(self, request, object_id, version_id, extra_context=None):
+        # Reversion restores authentication fields before applying the admin form.
+        # A readonly TOTP/IP field therefore cannot secure a historical restore.
+        if not admin_actor(request).is_superuser:
+            raise PermissionDenied()
+        return super().revision_view(request, object_id, version_id, extra_context)
+
     # We can't use has_delete_permission here because we still want user profiles to be
     # deleteable through related objects (i.e. User). Thus, we simply hide the delete button.
     # If an admin wants to go directly to the delete endpoint to delete a profile, more
@@ -90,7 +141,7 @@ class ProfileAdmin(NoBatchDeleteMixin, VersionAdmin):
         return super(ProfileAdmin, self).get_queryset(request).select_related('user')
 
     def get_fields(self, request, obj=None):
-        if request.user.has_perm('judge.totp'):
+        if admin_actor(request).has_perm('judge.totp'):
             fields = list(self.fields)
             fields.insert(fields.index('is_totp_enabled') + 1, 'totp_key')
             fields.insert(fields.index('totp_key') + 1, 'scratch_codes')
@@ -100,7 +151,7 @@ class ProfileAdmin(NoBatchDeleteMixin, VersionAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         fields = self.readonly_fields
-        if not request.user.has_perm('judge.totp'):
+        if not admin_actor(request).has_perm('judge.totp'):
             fields += ('is_totp_enabled',)
         return fields
 
@@ -161,7 +212,54 @@ class ProfileAdmin(NoBatchDeleteMixin, VersionAdmin):
             obj.save()
 
 
-class UserAdmin(OldUserAdmin):
+class UserAdmin(ManagedLoginUserAdminMixin, OldUserAdmin):
+    list_display = (*OldUserAdmin.list_display, 'login_policy_enabled')
+    list_filter = (*OldUserAdmin.list_filter, LoginPolicyFilter)
+
+    def get_readonly_fields(self, request, obj=None):
+        fields = super().get_readonly_fields(request, obj)
+        if not admin_actor(request).is_superuser:
+            fields = (*fields, *PRIVILEGED_USER_FIELDS)
+        return fields
+
+    def has_change_permission(self, request, obj=None):
+        actor = admin_actor(request)
+        return actor.has_perm('auth.change_user') and (obj is None or can_administer_user(actor, obj))
+
+    def has_delete_permission(self, request, obj=None):
+        actor = admin_actor(request)
+        return actor.has_perm('auth.delete_user') and (obj is None or (
+            can_administer_user(actor, obj) and (actor.is_superuser or not obj.is_staff)
+        ))
+
+    def add_view(self, request, form_url='', extra_context=None):
+        if request.method != 'POST':
+            return super().add_view(request, form_url, extra_context)
+        with transaction.atomic():
+            actor = User.objects.select_for_update().get(pk=request.user.pk)
+            request._account_admin_actor = actor
+            if not actor.is_active or not actor.is_staff or not actor.has_perms(('auth.add_user', 'auth.change_user')):
+                raise PermissionDenied()
+            check_user_admin_write(request, actor)
+            return super().add_view(request, form_url, extra_context)
+
+    def delete_queryset(self, request, queryset):
+        with transaction.atomic():
+            target_ids = set(queryset.values_list('pk', flat=True))
+            users = {user.pk: user for user in User.objects.select_for_update()
+                     .filter(pk__in=target_ids | {request.user.pk}).order_by('pk')}
+            actor = users[request.user.pk]
+            if not actor.has_perm('auth.delete_user') or '_impersonate' in request.session:
+                raise PermissionDenied()
+            for user_id in target_ids:
+                target = users.get(user_id)
+                if target and (not can_administer_user(actor, target) or (target.is_staff and not actor.is_superuser)):
+                    raise PermissionDenied()
+            super().delete_queryset(request, queryset)
+
+    def delete_model(self, request, obj):
+        self.delete_queryset(request, User.objects.filter(pk=obj.pk))
+
     def view_on_site(self, obj):
         return obj.profile.get_absolute_url()
 

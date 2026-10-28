@@ -4,6 +4,9 @@
     <div class="auth-flow-form">
         <form action="" method="post" class="form-area">
             {% csrf_token %}
+            {% if managed_login_expired %}
+                <p class="error">{{ _('This sign-in is no longer valid. Sign in again. If your issued password no longer works, ask the invigilator for a new one.') }}</p>
+            {% endif %}
             {% if form.errors %}
                 <div id="form-errors" style="max-width: fit-content;">
                     <p class="error">{{ _('Invalid username or password.') }}</p>

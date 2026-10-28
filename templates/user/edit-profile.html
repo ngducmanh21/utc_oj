@@ -99,6 +99,7 @@
                 editor.getSession().setMode("ace/mode/javascript");
             });
 
+            {% if can_manage_credentials %}
             $('#disable-2fa-button').click(function () {
                 alert({{ _('The administrators for this site require all the staff to have Two-factor Authentication enabled, so it may not be disabled at this time.')|htmltojs }});
             });
@@ -147,6 +148,7 @@
                 }
             });
 
+            {% endif %}
             // Alert when leaving an org
             $('.sortedm2m input').click(function () {
                 if (!$(this).is(':checked')) {
@@ -157,6 +159,7 @@
             });
         });
     </script>
+    {% if can_manage_credentials %}
     <script>
         // This is basically impossible to write without ES6, hence separate script block.
         $(() => {
@@ -257,6 +260,7 @@
             });
         });
     </script>
+    {% endif %}
 {% endblock %}
 
 {% block title_ruler %}{% endblock %}
@@ -366,11 +370,13 @@
                                 {{ _('Change your avatar') }}
                             </a>
                         </td></tr>
+                        {% if can_manage_credentials %}
                         <tr><td>
                             <a href="{{ url('password_change') }}" class="inline-header">
                                 {{ _('Change your password') }}
                             </a>
                         </td></tr>
+                        {% endif %}
                         {% if can_download_data %}
                             <tr><td>
                                 <a href="{{ url('user_prepare_data') }}" class="inline-header">
@@ -381,6 +387,7 @@
                     </table>
                 </div>
                 <div class="pane">
+                    {% if can_manage_credentials %}
                     <div>
                         {% if profile.is_totp_enabled %}
                             <div class="block-header grayed">{{ _('Two-factor authentication is enabled:') }}</div>
@@ -447,6 +454,15 @@
                         </table>
                     {% endif %}
                     </span>
+                    {% else %}
+                        <p role="status">
+                            {% if is_impersonating %}
+                                {{ _('Sign-in settings cannot be changed while impersonating another account.') }}
+                            {% else %}
+                                {{ _('Sign-in settings are managed by the invigilator. Contact the invigilator if you need a new password.') }}
+                            {% endif %}
+                        </p>
+                    {% endif %}
                 </div>
             </div>
             <hr>

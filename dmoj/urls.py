@@ -59,7 +59,7 @@ register_patterns = [
     ), name='password_change_done'),
     path('password/reset/', user.CustomPasswordResetView.as_view(), name='password_reset'),
     re_path(r'^password/reset/confirm/(?P<uidb64>[0-9A-Za-z]+)-(?P<token>.+)/$',
-            auth_views.PasswordResetConfirmView.as_view(
+            user.CustomPasswordResetConfirmView.as_view(
                 template_name='registration/password_reset_confirm.html',
                 title=_('Enter new password'),
             ), name='password_reset_confirm'),
@@ -108,7 +108,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('i18n/', include('django.conf.urls.i18n')),
     path('accounts/', include(register_patterns)),
-    path('', include('social_django.urls')),
+    path('', include('judge.social_auth_urls')),
 
     # URL Shortener management (on main domain)
     path('shorteners/', include('urlshortener.urls')),

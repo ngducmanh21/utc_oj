@@ -838,6 +838,7 @@ SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.social_user',
     'social_core.pipeline.user.get_username',
     'social_core.pipeline.social_auth.associate_by_email',
+    'judge.social_auth.verify_login_policy',
     'judge.social_auth.verify_registration_email',
     'judge.social_auth.get_username_password',
     'social_core.pipeline.user.create_user',
@@ -846,6 +847,7 @@ SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.associate_user',
     'social_core.pipeline.social_auth.load_extra_data',
     'social_core.pipeline.user.user_details',
+    'judge.social_auth.verify_login_policy',
 )
 
 SOCIAL_AUTH_GITHUB_SECURE_SCOPE = ['user:email']

@@ -7,10 +7,11 @@ import pyotp
 import webauthn
 from django import forms
 from django.conf import settings
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator, RegexValidator
+from django.db import transaction
 from django.db.models import Q
 from django.forms import BooleanField, CharField, ChoiceField, DateInput, Form, ModelForm, MultipleChoiceField, \
     formset_factory, inlineformset_factory
@@ -111,6 +112,16 @@ class ProfileForm(ModelForm):
         if not self.fields['organizations'].queryset:
             self.fields.pop('organizations')
 
+    def save(self, commit=True):
+        profile = super().save(commit=False)
+        if commit:
+            # A stale self-service profile form must not restore factor secrets
+            # or any other fields outside this form's allowlist.
+            fields = [field.name for field in profile._meta.concrete_fields if field.name in self.fields]
+            profile.save(update_fields=None if profile._state.adding else fields)
+            self.save_m2m()
+        return profile
+
 
 class UserForm(ModelForm):
     class Meta:
@@ -126,6 +137,32 @@ class UserForm(ModelForm):
         if len(first_name) > 30:
             raise ValidationError(_('Your full name is too long!'), code='NAME_LIMIT_EXCEEDED')
         return first_name
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        if commit:
+            # A profile edit loaded before login must not restore the old password.
+            user.save(update_fields=None if user._state.adding else self._meta.fields)
+            self.save_m2m()
+        return user
+
+
+class CustomPasswordResetForm(PasswordResetForm):
+    @transaction.atomic
+    def save(self, *args, **kwargs):
+        # Keep the account locks through token creation and email dispatch.
+        return super().save(*args, **kwargs)
+
+    def get_users(self, email):
+        with transaction.atomic():
+            candidates = [user.pk for user in super().get_users(email)]
+            users = list(User.objects.select_for_update().filter(pk__in=candidates).order_by('pk'))
+            # Recheck active/password/email after locking the User rows.
+            eligible = {user.pk for user in super().get_users(email)}
+            managed = set(Profile.objects.select_for_update().filter(
+                user_id__in=candidates, rotate_password_on_login=True,
+            ).values_list('user_id', flat=True))
+            return [user for user in users if user.pk in eligible and user.pk not in managed]
 
 
 class ProposeProblemSolutionForm(ModelForm):
@@ -567,10 +604,13 @@ class CustomAuthenticationForm(AuthenticationForm, SocialAuthMixin):
         self.fields['username'].widget.attrs.update({'placeholder': _('Username')})
         self.fields['password'].widget.attrs.update({'placeholder': _('Password')})
 
+    @transaction.atomic
     def clean(self):
         username = self.cleaned_data.get('username')
         try:
-            user = User.objects.get(username=username)
+            # Django may upgrade an old password hash during authenticate().
+            # Serialize that write with rotation so it cannot restore a consumed password.
+            user = User.objects.select_for_update().get(username=username)
         except User.DoesNotExist:
             user = None
         if user is not None:
@@ -653,7 +693,12 @@ class TwoFactorLoginForm(TOTPForm):
             if not self.webauthn_challenge:
                 raise ValidationError(_('No WebAuthn challenge issued.'))
 
-            response = json.loads(self.cleaned_data['webauthn_response'])
+            try:
+                response = json.loads(self.cleaned_data['webauthn_response'])
+                if not isinstance(response, dict) or not isinstance(response.get('response'), dict):
+                    raise ValueError()
+            except (ValueError, TypeError):
+                raise ValidationError(_('Invalid WebAuthn response.'))
             try:
                 credential = self.profile.webauthn_credentials.get(cred_id=response.get('id', ''))
             except WebAuthnCredential.DoesNotExist:

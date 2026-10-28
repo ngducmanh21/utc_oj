@@ -1,8 +1,9 @@
 from django.contrib import admin
 from django.contrib.admin.models import LogEntry
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
 from django.contrib.flatpages.models import FlatPage
 
+from judge.admin.auth import GroupAdmin
 from judge.admin.comments import CommentAdmin
 from judge.admin.contest import ContestAdmin, ContestParticipationAdmin, ContestTagAdmin
 from judge.admin.interface import BlogPostAdmin, BlogPostTagAdmin, FlatPageAdmin, LicenseAdmin, LogEntryAdmin, \
@@ -50,3 +51,5 @@ admin.site.register(TagGroup, TagGroupAdmin)
 admin.site.register(TagProblem, TagProblemAdmin)
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
+admin.site.unregister(Group)
+admin.site.register(Group, GroupAdmin)

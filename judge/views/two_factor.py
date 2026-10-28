@@ -9,10 +9,15 @@ import webauthn
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import RedirectURLMixin
+from django.contrib.sessions.backends.base import CreateError, UpdateError
+from django.db import DatabaseError
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse
 from django.urls import reverse
+from django.utils.decorators import method_decorator
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _, gettext_lazy
+from django.views.decorators.cache import never_cache
+from django.views.decorators.debug import sensitive_post_parameters, sensitive_variables
 from django.views.generic import FormView, View
 from django.views.generic.base import ContextMixin
 from django.views.generic.detail import SingleObjectMixin
@@ -20,6 +25,8 @@ from django.views.generic.detail import SingleObjectMixin
 from judge.forms import TOTPEnableForm, TOTPForm, TwoFactorLoginForm
 from judge.jinja2.gravatar import gravatar
 from judge.models import WebAuthnCredential
+from judge.utils.credential_policy import credential_management_required
+from judge.utils.managed_login import ManagedLoginRejected, PENDING_LOGIN_KEY, complete_managed_login
 from judge.utils.two_factor import WebAuthnJSONEncoder, webauthn_encode
 from judge.utils.views import TitleMixin
 
@@ -46,6 +53,7 @@ class TOTPView(TitleMixin, LoginRequiredMixin, FormView):
         return HttpResponseRedirect(reverse('user_edit_profile'))
 
 
+@method_decorator(credential_management_required, name='dispatch')
 class TOTPEnableView(TOTPView):
     title = gettext_lazy('Enable Two-factor Authentication')
     form_class = TOTPEnableForm
@@ -114,6 +122,7 @@ class TOTPRefreshView(TOTPEnableView):
         return not self.profile.is_totp_enabled
 
 
+@method_decorator(credential_management_required, name='dispatch')
 class TOTPDisableView(TOTPView):
     title = gettext_lazy('Disable Two-factor Authentication')
     template_name = 'registration/totp_disable.html'
@@ -138,6 +147,7 @@ class WebAuthnView(LoginRequiredMixin, View):
         return super(WebAuthnView, self).dispatch(request, *args, **kwargs)
 
 
+@method_decorator(credential_management_required, name='dispatch')
 class WebAuthnAttestationView(WebAuthnView):
     def get(self, request, *args, **kwargs):
         challenge = os.urandom(32)
@@ -210,6 +220,7 @@ class WebAuthnAttestView(WebAuthnView):
         return JsonResponse(data, encoder=WebAuthnJSONEncoder)
 
 
+@method_decorator(credential_management_required, name='dispatch')
 class WebAuthnDeleteView(SingleObjectMixin, WebAuthnView):
     def get_queryset(self):
         return self.request.profile.webauthn_credentials.all()
@@ -226,6 +237,8 @@ class WebAuthnDeleteView(SingleObjectMixin, WebAuthnView):
         return HttpResponse()
 
 
+@method_decorator(sensitive_post_parameters(), name='dispatch')
+@method_decorator(never_cache, name='dispatch')
 class TwoFactorLoginView(RedirectURLMixin, TOTPView, ContextMixin):
     form_class = TwoFactorLoginForm
     title = gettext_lazy('Perform Two-factor Authentication')
@@ -239,8 +252,25 @@ class TwoFactorLoginView(RedirectURLMixin, TOTPView, ContextMixin):
         return result
 
     def check_skip(self):
+        if PENDING_LOGIN_KEY in self.request.session:
+            return False
         return ((not self.profile.is_totp_enabled and not self.profile.is_webauthn_enabled) or
                 self.request.session.get('2fa_passed', False))
+
+    @sensitive_variables()
+    def post(self, request, *args, **kwargs):
+        if not request.profile.rotate_password_on_login and PENDING_LOGIN_KEY not in request.session:
+            return super().post(request, *args, **kwargs)
+        form = self.get_form()
+        try:
+            completed = complete_managed_login(request, request.session.get(PENDING_LOGIN_KEY), form)
+        except ManagedLoginRejected:
+            return HttpResponseRedirect(reverse('auth_login') + '?managed-login-expired=1')
+        except (DatabaseError, CreateError, UpdateError):
+            return HttpResponse(_('Unable to sign in right now. Please try again.'), status=503)
+        if completed:
+            return self.next_page()
+        return self.form_invalid(form)
 
     def next_page(self):
         redirect_to = self.request.GET.get('next', '')

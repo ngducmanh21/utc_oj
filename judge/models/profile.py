@@ -318,6 +318,14 @@ class Profile(models.Model):
     username_display_override = models.CharField(max_length=100, blank=True, verbose_name=_('display name override'),
                                                  help_text=_('Name displayed in place of username.'))
 
+    def _do_update(self, base_qs, using, pk_val, values, update_fields, forced_update):
+        # Only explicit security writes may change these fields. Ordinary saves
+        # can carry stale values, and deserialization/reversion bypasses save().
+        if update_fields is None:
+            protected = {'rotate_password_on_login', 'account_session_epoch', 'password_rotated_at', 'api_token'}
+            values = [value for value in values if value[0].name not in protected]
+        return super()._do_update(base_qs, using, pk_val, values, update_fields, forced_update)
+
     @classmethod
     def get_ticket_secret(cls, profile_id):
         return (hmac.new(utf8bytes(settings.EVENT_DAEMON_TICKET_KEY), b'%d' % profile_id, hashlib.sha512)

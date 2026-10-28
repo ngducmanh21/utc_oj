@@ -3,6 +3,7 @@ import itertools
 import json
 import os
 from operator import attrgetter, itemgetter
+from urllib.parse import urlencode
 
 import pytz
 from django.conf import settings
@@ -10,10 +11,13 @@ from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import Permission, User
-from django.contrib.auth.views import LoginView, PasswordChangeView, PasswordResetView, redirect_to_login
+from django.contrib.auth.views import LoginView, PasswordChangeView, PasswordResetConfirmView, PasswordResetView, \
+    redirect_to_login
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.sessions.backends.base import CreateError, UpdateError
 from django.core.cache import cache
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied, ValidationError
+from django.db import DatabaseError, transaction
 from django.db.models import Count, F, FilteredRelation, Max, Min, Prefetch, Q
 from django.db.models.expressions import Value
 from django.db.models.fields import DateField
@@ -28,19 +32,23 @@ from django.utils.formats import date_format
 from django.utils.functional import cached_property
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _, gettext_lazy
+from django.views.decorators.debug import sensitive_variables
 from django.views.decorators.http import require_POST
 from django.views.generic import DetailView, FormView, ListView, TemplateView, View
 from reversion import revisions
 
-from judge.forms import CustomAuthenticationForm, ProfileForm, UserBanForm, UserDownloadDataForm, UserForm, \
-    newsletter_id
+from judge.forms import CustomAuthenticationForm, CustomPasswordResetForm, ProfileForm, UserBanForm, \
+    UserDownloadDataForm, UserForm, newsletter_id
 from judge.models import BlogPost, Organization, Profile, Submission
 from judge.models import Comment
 from judge.performance_points import get_pp_breakdown
 from judge.ratings import rating_class, rating_progress
 from judge.tasks import prepare_user_data
 from judge.utils.celery import task_status_by_id, task_status_url_by_id
+from judge.utils.credential_policy import IMPERSONATED_CREDENTIAL_MESSAGE, credential_management_required, \
+    is_impersonating
 from judge.utils.infinite_paginator import InfinitePaginationMixin
+from judge.utils.managed_login import ManagedLoginRejected, begin_password_login
 from judge.utils.problems import contest_completed_ids, user_completed_ids
 from judge.utils.pwned import PwnedPasswordsValidator
 from judge.utils.ranker import ranker
@@ -160,20 +168,32 @@ class CustomLoginView(LoginView):
     def get_context_data(self, **kwargs):
         context = super(CustomLoginView, self).get_context_data(**kwargs)
         context['oauth'] = context['form']
+        context['managed_login_expired'] = self.request.GET.get('managed-login-expired') == '1'
         return context
 
+    @sensitive_variables()
     def form_valid(self, form):
         password = form.cleaned_data['password']
         validator = PwnedPasswordsValidator()
         try:
             validator.validate(password)
         except ValidationError:
-            self.request.session['password_pwned'] = True
+            password_pwned = True
         else:
-            self.request.session['password_pwned'] = False
-        return super().form_valid(form)
+            password_pwned = False
+        try:
+            pending = begin_password_login(self.request, form.get_user(), password, password_pwned=password_pwned)
+        except ManagedLoginRejected as error:
+            form.add_error(None, error)
+            return self.form_invalid(form)
+        except (DatabaseError, CreateError, UpdateError):
+            return HttpResponse(_('Unable to sign in right now. Please try again.'), status=503)
+        if pending:
+            return HttpResponseRedirect(reverse('login_2fa') + '?' + urlencode({'next': self.get_success_url()}))
+        return HttpResponseRedirect(self.get_success_url())
 
 
+@method_decorator(credential_management_required, name='dispatch')
 class CustomPasswordChangeView(PasswordChangeView):
     template_name = 'registration/password_change_form.html'
 
@@ -528,11 +548,14 @@ def edit_profile(request):
         'has_math_config': bool(settings.MATHOID_URL),
         'ignore_user_script': True,
         'TIMEZONE_MAP': settings.TIMEZONE_MAP,
+        'can_manage_credentials': not request.profile.rotate_password_on_login and not is_impersonating(request),
+        'is_impersonating': is_impersonating(request),
     })
 
 
 @require_POST
 @login_required
+@credential_management_required
 def generate_api_token(request):
     profile = request.profile
     with revisions.create_revision(atomic=True):
@@ -557,11 +580,12 @@ def set_theme(request):
 
 @require_POST
 @login_required
+@credential_management_required
 def remove_api_token(request):
     profile = request.profile
     with revisions.create_revision(atomic=True):
         profile.api_token = None
-        profile.save()
+        profile.save(update_fields=['api_token'])
         revisions.set_user(request.user)
         revisions.set_comment(_('Removed API token for user'))
     return JsonResponse({})
@@ -569,6 +593,7 @@ def remove_api_token(request):
 
 @require_POST
 @login_required
+@credential_management_required
 def generate_scratch_codes(request):
     profile = request.profile
     with revisions.create_revision(atomic=True):
@@ -701,11 +726,17 @@ class UserLogoutView(TitleMixin, TemplateView):
 
 
 class CustomPasswordResetView(PasswordResetView):
+    form_class = CustomPasswordResetForm
     title = gettext_lazy('Password reset')
     from_email = settings.SERVER_EMAIL
     template_name = 'registration/password_reset.html'
     html_email_template_name = 'registration/password_reset_email.html'
     email_template_name = 'registration/password_reset_email.txt'
+
+    def dispatch(self, request, *args, **kwargs):
+        if is_impersonating(request):
+            raise PermissionDenied(IMPERSONATED_CREDENTIAL_MESSAGE)
+        return super().dispatch(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         key = f'pwreset!{request.META["REMOTE_ADDR"]}'
@@ -719,3 +750,24 @@ class CustomPasswordResetView(PasswordResetView):
         }
 
         return super().post(request, *args, **kwargs)
+
+
+@method_decorator(transaction.atomic, name='dispatch')
+class CustomPasswordResetConfirmView(PasswordResetConfirmView):
+    def dispatch(self, request, *args, **kwargs):
+        if is_impersonating(request):
+            raise PermissionDenied(IMPERSONATED_CREDENTIAL_MESSAGE)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_user(self, uidb64):
+        user = super().get_user(uidb64)
+        if user is not None:
+            user = User.objects.select_for_update().filter(pk=user.pk).first()
+            if user is None:
+                return None
+            profile = Profile.objects.select_for_update().filter(user=user).first()
+            if profile is not None and profile.rotate_password_on_login:
+                # Render Django's usual invalid-link response, including for
+                # links already exchanged for a set-password session token.
+                return None
+        return user

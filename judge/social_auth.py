@@ -4,23 +4,74 @@ from operator import itemgetter
 from urllib.parse import quote
 
 from django import forms
-from django.contrib.auth import password_validation
+from django.contrib.auth import REDIRECT_FIELD_NAME, password_validation
 from django.contrib.auth.models import User
+from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
+from django.views.decorators.cache import never_cache
+from django.views.decorators.csrf import csrf_exempt
 from requests import HTTPError
 from reversion import revisions
+from social_core.actions import do_complete
 from social_core.backends.github import GithubOAuth2
 from social_core.exceptions import AuthException, InvalidEmail, SocialAuthBaseException
 from social_core.pipeline.partial import partial
+from social_django import views as social_views
 from social_django.middleware import SocialAuthExceptionMiddleware as OldSocialAuthExceptionMiddleware
+from social_django.utils import psa
 
 from judge.forms import ProfileForm
 from judge.models import Language, Profile
+from judge.utils.credential_policy import IMPERSONATED_CREDENTIAL_MESSAGE, credential_management_required, \
+    is_impersonating, locked_credential_account
 from judge.utils.registration import validate_registration_email
 
 logger = logging.getLogger('judge.social_auth')
+
+
+@never_cache
+@credential_management_required
+def auth(request, backend):
+    return social_views.auth(request, backend)
+
+
+@never_cache
+@csrf_exempt
+@transaction.atomic
+@credential_management_required
+@psa(f'{social_views.NAMESPACE}:complete')
+def complete(request, backend, *args, **kwargs):
+    # Pipeline guards keep User -> Profile locks until association and session
+    # creation finish, including callbacks resumed from a partial pipeline.
+    return do_complete(request.backend, _social_login, user=request.user,
+                       redirect_name=REDIRECT_FIELD_NAME, request=request, *args, **kwargs)
+
+
+def _social_login(backend, user, social_user):
+    # Also guard the final login callback if a backend supplies its own pipeline.
+    result = verify_login_policy(backend, user=user)
+    return social_views._do_login(backend, result['user'], social_user)
+
+
+@never_cache
+@credential_management_required
+def disconnect(request, backend, association_id=None):
+    return social_views.disconnect(request, backend, association_id)
+
+
+def verify_login_policy(backend, user=None, *args, **kwargs):
+    request = backend.strategy.request
+    if is_impersonating(request):
+        raise AuthException(backend, str(IMPERSONATED_CREDENTIAL_MESSAGE))
+    if user is not None:
+        try:
+            with locked_credential_account(user.pk) as (user, profile):
+                return {'user': user}
+        except PermissionDenied as exc:
+            raise AuthException(backend, str(exc)) from exc
 
 
 class GitHubSecureEmailOAuth2(GithubOAuth2):
@@ -86,6 +137,9 @@ class SocialPostAuthForm(forms.Form):
 @partial
 def get_username_password(backend, user, details, username=None, *args, **kwargs):
     # Resuming this partial step skips the earlier pipeline validator.
+    result = verify_login_policy(backend, user=user)
+    if result:
+        user = result['user']
     verify_registration_email(backend, details, user=user)
     if not user:
         request = backend.strategy.request
@@ -101,14 +155,19 @@ def get_username_password(backend, user, details, username=None, *args, **kwargs
         })
 
 
-def add_password(user, password=None, *args, **kwargs):
+def add_password(user, backend, password=None, *args, **kwargs):
+    result = verify_login_policy(backend, user=user)
+    user = result['user']
     if password:
         user.set_password(password)
-        user.save()
+        user.save(update_fields=['password'])
+    return {'user': user}
 
 
 @partial
 def make_profile(backend, user, response, is_new=False, *args, **kwargs):
+    result = verify_login_policy(backend, user=user)
+    user = result['user']
     if is_new:
         if not hasattr(user, 'profile'):
             profile = Profile(user=user)

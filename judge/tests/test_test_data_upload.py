@@ -384,6 +384,8 @@ class TestDataUploadTests(TestCase):
     def test_empty_cases_with_replacement_zip_keeps_current_dataset(self):
         data = self.published_data()
         old_archive = data.zipfile.name
+        # A newly generated ZIP can have a different wall-clock timestamp.
+        old_bytes = Path(data.zipfile.path).read_bytes()
         old_init = Path(self.temp.name + '/problems/uploadtest/init.yml').read_text()
         session = self.session()
         upload = self.upload(session, status='READY')
@@ -394,7 +396,7 @@ class TestDataUploadTests(TestCase):
         session.refresh_from_db()
         upload.refresh_from_db()
         self.assertEqual(data.zipfile.name, old_archive)
-        self.assertEqual(Path(data.zipfile.path).read_bytes(), archive_bytes())
+        self.assertEqual(Path(data.zipfile.path).read_bytes(), old_bytes)
         self.assertEqual(Path(self.temp.name + '/problems/uploadtest/init.yml').read_text(), old_init)
         self.assertEqual(self.problem.cases.count(), 1)
         self.assertEqual(session.status, 'ACTIVE')
