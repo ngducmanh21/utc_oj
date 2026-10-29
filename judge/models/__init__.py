@@ -19,6 +19,7 @@ from judge.models.submission import SUBMISSION_RESULT, Submission, SubmissionSou
 from judge.models.tag import Tag, TagData, TagGroup, TagProblem
 from judge.models.test_data_upload import ProblemDataEditSession, TestDataUpload
 from judge.models.ticket import GeneralIssue, Ticket, TicketMessage
+from judge.models.user_import import UserImportBatch, UserImportOperation, UserImportRow
 
 revisions.register(Profile, exclude=['points', 'last_access', 'ip', 'rating', 'rotate_password_on_login',
                                      'account_session_epoch', 'password_rotated_at', 'api_token'])

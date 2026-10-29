@@ -396,6 +396,7 @@ class ManagedLoginMigrationTests(TransactionTestCase):
         previous = [('judge', '0238_problem_data_revision')]
         current = [('judge', '0239_managed_login_policy')]
         executor = MigrationExecutor(connection)
+        final = executor.loader.graph.leaf_nodes()
         try:
             executor.migrate(previous)
             old_apps = executor.loader.project_state(previous).apps
@@ -419,4 +420,4 @@ class ManagedLoginMigrationTests(TransactionTestCase):
             self.assertEqual(restored_apps.get_model('judge', 'Profile').objects.get(user_id=old_user.pk).language_id,
                              language.pk)
         finally:
-            MigrationExecutor(connection).migrate(current)
+            MigrationExecutor(connection).migrate(final)

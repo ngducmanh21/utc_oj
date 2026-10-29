@@ -26,6 +26,7 @@ django_jinja>=2.5.0
 llist
 requests
 django-fernet-fields @ git+https://github.com/DMOJ/django-fernet-fields.git
+cryptography>=3.4
 pyotp
 qrcode[pil]
 jsonfield @ git+https://github.com/DMOJ/jsonfield.git
