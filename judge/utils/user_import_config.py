@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 
 from cryptography.fernet import Fernet
 from django.conf import settings
+from django.contrib.auth.password_validation import get_password_validators
 from django.core.exceptions import ImproperlyConfigured
 
 
@@ -68,6 +69,9 @@ def get_user_import_config():
     digest_key = _key(digest, 'DMOJ_USER_IMPORT_DIGEST_KEY') if digest else b''
     if enabled and (not active or not digest_key):
         raise ImproperlyConfigured('Enabling user import requires an active encryption key and a digest key.')
+    if enabled and any(callable(getattr(validator, 'password_changed', None))
+                       for validator in get_password_validators(settings.AUTH_PASSWORD_VALIDATORS)):
+        raise ImproperlyConfigured('User import cannot run plaintext password_changed callbacks from prepared hashes.')
     if digest_key and digest_key in {_key(value, 'DMOJ_USER_IMPORT_KEYS') for value in keys.values()}:
         raise ImproperlyConfigured('User import encryption and digest keys must be different.')
     return UserImportConfig(enabled=enabled, active_key_id=active, keys=dict(keys), digest_key=digest_key, **numbers)

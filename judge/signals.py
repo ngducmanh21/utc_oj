@@ -69,8 +69,8 @@ def profile_update(sender, instance, **kwargs):
     if hasattr(instance, '_updating_stats_only'):
         return
 
-    cache.delete_many([make_template_fragment_key('user_about', (instance.id, engine))
-                       for engine in EFFECTIVE_MATH_ENGINES])
+    keys = [make_template_fragment_key('user_about', (instance.id, engine)) for engine in EFFECTIVE_MATH_ENGINES]
+    transaction.on_commit(lambda: cache.delete_many(keys), robust=True)
 
 
 @receiver(post_delete, sender=WebAuthnCredential)
@@ -151,8 +151,8 @@ def contest_submission_delete(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Organization)
 def organization_update(sender, instance, **kwargs):
-    cache.delete_many([make_template_fragment_key('organization_html', (instance.id, engine))
-                       for engine in EFFECTIVE_MATH_ENGINES])
+    keys = [make_template_fragment_key('organization_html', (instance.id, engine)) for engine in EFFECTIVE_MATH_ENGINES]
+    transaction.on_commit(lambda: cache.delete_many(keys), robust=True)
 
 
 @receiver(m2m_changed, sender=Organization.admins.through)
