@@ -13,7 +13,7 @@ from judge.feed import AtomBlogFeed, AtomCommentFeed, AtomProblemFeed, BlogFeed,
 from judge.sitemap import sitemaps
 from judge.views import TitledTemplateView, api, blog, comment, contests, language, license, mailgun, notification, \
     organization, preview, problem, problem_download, problem_manage, ranked_submission, register, stats, status, \
-    submission, tag, tasks, test_data_upload, ticket, two_factor, user, widgets
+    submission, tag, tasks, test_data_upload, ticket, two_factor, user, user_import, widgets
 from judge.views.magazine import MagazinePage
 from judge.views.misc_config import MiscConfigEdit
 from judge.views.problem_data import ProblemDataView, ProblemSubmissionDiff, \
@@ -205,6 +205,13 @@ urlpatterns = [
     ])),
 
     path('users/', include([
+        path('import_users/', include([
+            path('', user_import.index, name='user_import'),
+            path('sample/', user_import.sample, name='user_import_sample'),
+            path('post_file/', user_import.post_file, name='user_import_post_file'),
+            path('submit/', user_import.submit, name='user_import_submit'),
+            path('status/<uuid:batch_id>/', user_import.status, name='user_import_status'),
+        ])),
         path('', user.users, name='user_list'),
         path('<int:page>', lambda request, page:
              HttpResponsePermanentRedirect('%s?page=%s' % (reverse('user_list'), page))),

@@ -1,0 +1,22 @@
+#user-import { min-width: 0; }
+#user-import .import-panel { padding: 1em; margin: 1em 0; border: 1px solid #8886; border-radius: 5px; }
+#user-import h3 { margin-top: 0; }
+#user-import p, #user-import li { overflow-wrap: anywhere; }
+#user-import details { margin: 1em 0; }
+#user-import summary { cursor: pointer; }
+#user-import code { white-space: normal; overflow-wrap: anywhere; }
+#user-import input[type=file] { box-sizing: border-box; max-width: 100%; }
+#user-import button { margin: .3em .3em .3em 0; white-space: normal; }
+#user-import button:disabled { opacity: .55; cursor: not-allowed; }
+#user-import [hidden] { display: none !important; }
+#import-error, #import-errors, .import-row-errors { color: #c74d45; }
+#import-table-wrap { max-width: 100%; overflow-x: auto; }
+#import-rows td { vertical-align: top; max-width: 22em; overflow-wrap: anywhere; }
+#import-rows p { margin: .3em 0; }
+#import-confirmation { margin-top: 1em; padding-top: .75em; border-top: 1px solid #8886; }
+#import-status { font-weight: bold; }
+#import-summary { font-variant-numeric: tabular-nums; }
+@media (max-width: 600px) {
+    #user-import .import-panel { padding: .65em; }
+    #import-rows td { min-width: 6em; }
+}

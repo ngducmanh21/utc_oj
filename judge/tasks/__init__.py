@@ -5,4 +5,5 @@ from judge.tasks.problem import *
 from judge.tasks.submission import *
 from judge.tasks.test_data_upload import *
 from judge.tasks.user import *
+from judge.tasks.user_import import *
 from judge.tasks.webhook import *

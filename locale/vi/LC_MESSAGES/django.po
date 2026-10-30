@@ -10011,3 +10011,491 @@ msgstr "Không thể thay đổi thông tin đăng nhập khi đang dùng chế 
 
 msgid "Your sign-in has changed. Sign in again before changing credentials."
 msgstr "Thông tin đăng nhập đã thay đổi. Hãy đăng nhập lại trước khi thay đổi mật khẩu hoặc phương thức xác thực."
+
+#: templates/user/import/index.html
+msgid "A new account requires a password. Blank fields on existing accounts keep their current values."
+msgstr "Tài khoản mới bắt buộc có mật khẩu. Ô trống của tài khoản đã tồn tại sẽ giữ nguyên giá trị hiện tại."
+
+#: judge/views/user_import.py
+msgid "A valid superuser account and profile are required."
+msgstr "Cần tài khoản superuser và hồ sơ hợp lệ."
+
+#: templates/user/import/index.html
+msgid "Action"
+msgstr "Thao tác"
+
+#: judge/utils/user_import_validation.py
+msgid "An account changed. Upload and preview the CSV again."
+msgstr "Một tài khoản đã thay đổi. Hãy tải CSV lên và xem trước lại."
+
+#: judge/utils/user_import.py
+msgid "An organization slug in this row does not exist."
+msgstr "Một slug tổ chức trong dòng này không tồn tại."
+
+#: judge/views/user_import.py
+msgid "Browser session storage is unavailable. Keep this page open to retry the same upload."
+msgstr "Không thể lưu trạng thái phiên trong trình duyệt. Hãy giữ trang này mở để gửi lại đúng lượt tải lên."
+
+#: templates/user/import/index.html
+msgid "CSV columns and update rules"
+msgstr "Các cột CSV và quy tắc cập nhật"
+
+#: templates/user/import/index.html
+msgid "CSV file"
+msgstr "Tệp CSV"
+
+#: judge/views/user_import.py templates/user/import/index.html
+msgid "CSV line"
+msgstr "Dòng CSV"
+
+#: judge/views/user_import.py
+msgid "Change your password before importing users."
+msgstr "Hãy đổi mật khẩu trước khi nhập tài khoản."
+
+#: templates/user/import/index.html
+msgid "Check status"
+msgstr "Kiểm tra trạng thái"
+
+#: judge/views/user_import.py
+msgid "Checking"
+msgstr "Đang kiểm tra"
+
+#: templates/user/import/index.html
+msgid "Choose a CSV file to start."
+msgstr "Chọn một tệp CSV để bắt đầu."
+
+#: judge/views/user_import.py
+#, python-brace-format
+msgid "Confirm before: {time}"
+msgstr "Hạn xác nhận: {time}"
+
+#: templates/user/import/index.html
+msgid "Confirm import"
+msgstr "Xác nhận nhập tài khoản"
+
+#: judge/views/user_import.py
+msgid "Connection interrupted. The import key was kept. Check the same request before retrying."
+msgstr "Kết nối bị gián đoạn. Mã lượt nhập đã được giữ lại. Hãy kiểm tra yêu cầu này trước khi thử lại."
+
+#: judge/views/user_import.py
+msgid "Correct all listed errors in your local CSV and upload it again. No accounts were changed."
+msgstr "Hãy sửa tất cả lỗi trong tệp CSV trên máy rồi tải lại. Chưa có tài khoản nào thay đổi."
+
+#: judge/utils/user_import.py judge/utils/user_import_validation.py
+msgid "Correct the CSV errors before importing."
+msgstr "Hãy sửa các lỗi CSV trước khi nhập tài khoản."
+
+#: judge/views/user_import.py
+msgid "Disabling password rotation does not restore a password already consumed by a login."
+msgstr "Tắt xoay vòng mật khẩu không khôi phục mật khẩu đã được dùng để đăng nhập."
+
+#: templates/user/import/index.html
+msgid "Download sample CSV"
+msgstr "Tải CSV mẫu"
+
+#: judge/views/user_import.py
+msgid "Empty"
+msgstr "Trống"
+
+#: templates/user/import/index.html
+msgid "Enable JavaScript to upload and review this CSV safely."
+msgstr "Hãy bật JavaScript để tải lên và xem trước CSV an toàn."
+
+#: judge/views/user_import.py
+msgid "End impersonation before importing users."
+msgstr "Hãy kết thúc chế độ đăng nhập thay trước khi nhập tài khoản."
+
+#: judge/utils/user_import.py
+msgid "Enter a valid email address."
+msgstr "Hãy nhập địa chỉ email hợp lệ."
+
+#: templates/user/import/index.html
+msgid "Errors"
+msgstr "Lỗi"
+
+#: judge/views/user_import.py
+msgid "Expected a batch ID, version and confirmation."
+msgstr "Cần mã lượt nhập, phiên bản và xác nhận."
+
+#: templates/user/import/index.html
+msgid "Fields"
+msgstr "Các trường"
+
+#: templates/user/import/index.html
+msgid "I reviewed the account updates, password changes, password rotation and mute settings for every row."
+msgstr "Tôi đã kiểm tra thay đổi tài khoản, mật khẩu, xoay vòng mật khẩu và mute cho từng dòng."
+
+#: judge/views/user_import.py templates/user/import/index.html
+msgid "Import execution is not available yet."
+msgstr "Chức năng thực thi nhập tài khoản chưa được mở."
+
+#: templates/user/import/index.html
+msgid "Import preview"
+msgstr "Xem trước lượt nhập"
+
+#: judge/views/user_import.py
+msgid "Import request not found."
+msgstr "Không tìm thấy yêu cầu nhập tài khoản."
+
+#: judge/views/user_import.py
+msgid "Import users"
+msgstr "Import users"
+
+#: judge/views/user_import.py
+msgid "Invalid request length."
+msgstr "Độ dài yêu cầu không hợp lệ."
+
+#: judge/utils/user_import_crypto.py
+msgid "Invalid temporary credential context."
+msgstr "Ngữ cảnh dữ liệu mật khẩu tạm không hợp lệ."
+
+#: judge/views/user_import.py
+msgid "Keep unchanged"
+msgstr "Giữ nguyên"
+
+#: judge/views/user_import.py
+msgid "Log in as a superuser."
+msgstr "Hãy đăng nhập bằng tài khoản superuser."
+
+#: templates/user/import/index.html
+msgid "Mute"
+msgstr "Mute"
+
+#: templates/user/import/index.html
+msgid "Mute all imported accounts"
+msgstr "Bật mute cho tất cả tài khoản trong CSV"
+
+#: templates/user/import/index.html
+msgid "Mute applies to every row, including existing accounts, and limits comments, tickets and display features."
+msgstr "Mute áp dụng cho mọi dòng, kể cả tài khoản đã tồn tại, và hạn chế bình luận, ticket cùng một số tính năng hiển thị."
+
+#: judge/utils/user_import.py
+msgid "New accounts require a password."
+msgstr "Tài khoản mới bắt buộc có mật khẩu."
+
+#: judge/utils/user_import.py
+msgid "Only active ordinary accounts with a profile can be imported."
+msgstr "Chỉ được nhập tài khoản thường đang hoạt động và có hồ sơ."
+
+#: judge/views/user_import.py
+msgid "Only active superusers can import users."
+msgstr "Chỉ superuser đang hoạt động mới được nhập tài khoản."
+
+#: templates/user/import/index.html
+msgid "Organizations to add"
+msgstr "Tổ chức sẽ thêm"
+
+#: judge/views/user_import.py
+#, python-brace-format
+msgid "Page {page} of {pages}"
+msgstr "Trang {page}/{pages}"
+
+#: templates/user/import/index.html
+msgid "Password rotation"
+msgstr "Xoay vòng mật khẩu"
+
+#: judge/utils/user_import_storage.py
+msgid "Password validation needs the matching account."
+msgstr "Kiểm tra mật khẩu cần đúng tài khoản tương ứng."
+
+#: judge/views/user_import.py
+msgid "Preview ready. No accounts have been changed."
+msgstr "Bản xem trước đã sẵn sàng. Chưa có tài khoản nào thay đổi."
+
+#: templates/user/import/index.html
+msgid "Previous"
+msgstr "Trước"
+
+#: judge/views/user_import.py
+msgid "Provided"
+msgstr "Đã cung cấp"
+
+#: judge/views/user_import.py
+#, python-brace-format
+msgid "Rows: {total}. Prepared passwords: {prepared}. Committed accounts: {applied}."
+msgstr "Số dòng: {total}. Mật khẩu đã chuẩn bị: {prepared}. Tài khoản đã lưu: {applied}."
+
+#: judge/views/user_import.py
+msgid "School"
+msgstr "Trường"
+
+#: templates/user/import/index.html
+msgid "Separate existing organization slugs with &. Memberships are added; existing memberships are kept."
+msgstr "Phân cách slug của các tổ chức đã tồn tại bằng &. Chỉ thêm thành viên và giữ nguyên các tổ chức đang tham gia."
+
+#: judge/utils/user_import_validation.py
+msgid "Temporary credentials expired. Upload the CSV again."
+msgstr "Dữ liệu mật khẩu tạm đã hết hạn. Hãy tải CSV lên lại."
+
+#: judge/utils/user_import.py
+msgid "The CSV contains no account rows."
+msgstr "CSV không có dòng dữ liệu tài khoản."
+
+#: judge/utils/user_import.py
+msgid "The CSV exceeds the row limit."
+msgstr "CSV vượt quá giới hạn số dòng."
+
+#: judge/utils/user_import.py judge/views/user_import.py
+msgid "The CSV exceeds the upload size limit."
+msgstr "Tệp CSV vượt quá giới hạn dung lượng tải lên."
+
+#: judge/utils/user_import.py
+msgid "The CSV header is missing or malformed."
+msgstr "CSV thiếu header hoặc header không hợp lệ."
+
+#: judge/utils/user_import.py
+msgid "The CSV quoting or field size is invalid."
+msgstr "Dấu ngoặc kép hoặc kích thước ô CSV không hợp lệ."
+
+#: judge/utils/user_import_storage.py
+msgid "The batch already has rows or is no longer validating."
+msgstr "Lượt nhập đã có dữ liệu hoặc không còn trong bước kiểm tra."
+
+#: judge/utils/user_import_service.py
+msgid "The batch cannot be made ready for preview."
+msgstr "Không thể chuẩn bị lượt nhập này để xem trước."
+
+#: judge/utils/user_import_service.py
+msgid "The batch changed or an account changed. Upload and preview the CSV again."
+msgstr "Lượt nhập hoặc một tài khoản đã thay đổi. Hãy tải CSV lên và xem trước lại."
+
+#: judge/utils/user_import.py
+msgid "The batch does not match the request owner or key."
+msgstr "Lượt nhập không khớp người tạo hoặc mã của yêu cầu."
+
+#: judge/utils/user_import_service.py
+msgid "The batch is not available for validation."
+msgstr "Lượt nhập không sẵn sàng để kiểm tra."
+
+#: judge/utils/user_import.py
+msgid "The configured default language does not exist."
+msgstr "Ngôn ngữ lập trình mặc định đã cấu hình không tồn tại."
+
+#: judge/utils/user_import.py
+msgid "The database treats multiple CSV usernames as the same account."
+msgstr "Cơ sở dữ liệu coi nhiều username trong CSV là cùng một tài khoản."
+
+#: judge/tasks/user_import.py
+msgid "The import owner no longer has permission to import users."
+msgstr "Người tạo lượt nhập không còn quyền nhập tài khoản."
+
+#: judge/utils/user_import.py
+msgid "The import request has no recoverable batch."
+msgstr "Yêu cầu nhập không có lượt nhập để khôi phục."
+
+#: judge/utils/user_import_storage.py
+msgid "The import row changed during password validation."
+msgstr "Dòng dữ liệu đã thay đổi trong khi kiểm tra mật khẩu."
+
+#: judge/utils/user_import.py
+msgid "The mute option must be a boolean."
+msgstr "Tùy chọn mute phải là giá trị boolean."
+
+#: judge/views/user_import.py
+msgid "The mute option must be true or false."
+msgstr "Tùy chọn mute phải là true hoặc false."
+
+#: judge/utils/user_import_storage.py
+msgid "The password does not satisfy the configured password rules."
+msgstr "Mật khẩu không đáp ứng các quy tắc đã cấu hình."
+
+#: judge/utils/user_import.py
+msgid "The password is blank or exceeds the password length limit."
+msgstr "Mật khẩu chỉ có khoảng trắng hoặc vượt quá giới hạn độ dài."
+
+#: judge/utils/user_import_storage.py
+msgid "The prepared password hash is invalid."
+msgstr "Hash mật khẩu đã chuẩn bị không hợp lệ."
+
+#: judge/views/user_import.py
+msgid "The request exceeds the upload size limit."
+msgstr "Yêu cầu vượt quá giới hạn dung lượng tải lên."
+
+#: judge/utils/user_import.py
+msgid "The row has a different number of cells than the header."
+msgstr "Số ô của dòng không khớp với header."
+
+#: judge/views/user_import.py
+msgid "The server has not received this upload. Choose the same file to retry with the saved key."
+msgstr "Máy chủ chưa nhận lượt tải lên này. Hãy chọn lại đúng tệp để thử với mã đã lưu."
+
+#: judge/utils/user_import_crypto.py
+msgid "The temporary credential could not be verified."
+msgstr "Không thể xác minh dữ liệu mật khẩu tạm."
+
+#: judge/utils/user_import_crypto.py judge/utils/user_import_storage.py
+msgid "The temporary credential expired. Upload the CSV again."
+msgstr "Dữ liệu mật khẩu tạm đã hết hạn. Hãy tải CSV lên lại."
+
+#: judge/utils/user_import.py
+msgid "The value exceeds the field length limit."
+msgstr "Giá trị vượt quá giới hạn độ dài của trường."
+
+#: judge/utils/user_import.py
+msgid "This idempotency key belongs to a different request."
+msgstr "Mã idempotency này thuộc một yêu cầu có nội dung khác."
+
+#: judge/views/user_import.py
+msgid "This import has ended. No accounts were changed."
+msgstr "Lượt nhập này đã kết thúc. Chưa có tài khoản nào thay đổi."
+
+#: judge/views/user_import.py
+msgid "This method is not allowed."
+msgstr "Phương thức này không được hỗ trợ."
+
+#: judge/utils/user_import.py
+msgid "This username appears more than once in the CSV."
+msgstr "Username này xuất hiện nhiều lần trong CSV."
+
+#: judge/utils/user_import_validation.py
+msgid "This validation attempt is no longer current."
+msgstr "Lần kiểm tra này không còn hiệu lực."
+
+#: judge/utils/user_import_service.py
+msgid "This worker no longer owns the batch."
+msgstr "Worker này không còn quyền xử lý lượt nhập."
+
+#: templates/user/import/index.html
+#, python-format
+msgid "UTF-8, comma separated. Maximum %(rows)s rows and %(size)s bytes."
+msgstr "UTF-8, phân cách bằng dấu phẩy. Tối đa %(rows)s dòng và %(size)s byte."
+
+#: judge/utils/user_import.py
+msgid "Unable to check the username collation."
+msgstr "Không thể kiểm tra quy tắc so sánh username của cơ sở dữ liệu."
+
+#: judge/utils/user_import.py
+msgid "Unknown import operation."
+msgstr "Thao tác nhập không được hỗ trợ."
+
+#: judge/utils/user_import.py
+msgid "Upload a UTF-8 CSV file."
+msgstr "Hãy tải lên tệp CSV UTF-8."
+
+#: templates/user/import/index.html
+msgid "Upload a user CSV"
+msgstr "Tải CSV tài khoản lên"
+
+#: templates/user/import/index.html
+msgid "Upload and preview"
+msgstr "Tải lên và xem trước"
+
+#: judge/views/user_import.py
+msgid "Upload one UTF-8 CSV file."
+msgstr "Hãy tải lên một tệp CSV UTF-8."
+
+#: judge/utils/user_import_storage.py
+msgid "Upload the CSV again to validate this password."
+msgstr "Hãy tải CSV lên lại để kiểm tra mật khẩu này."
+
+#: templates/user/import/index.html
+msgid "Upload the CSV, review every change, then confirm the import. Validation does not change accounts."
+msgstr "Tải CSV lên, kiểm tra từng thay đổi rồi xác nhận nhập tài khoản. Bước kiểm tra không thay đổi tài khoản."
+
+#: judge/utils/user_import.py
+msgid "Use UTF-8 text without NUL characters."
+msgstr "Hãy dùng văn bản UTF-8 không chứa ký tự NUL."
+
+#: judge/utils/user_import.py
+msgid "Use a UUID idempotency key."
+msgstr "Mã idempotency phải có định dạng UUID."
+
+#: judge/utils/user_import.py
+msgid "Use a nonempty username containing word characters within the limit."
+msgstr "Username không được trống, chỉ chứa chữ, số hoặc dấu gạch dưới và không vượt quá giới hạn độ dài."
+
+#: judge/utils/user_import_service.py
+msgid "Use a positive integer preview version."
+msgstr "Phiên bản xem trước phải là số nguyên dương."
+
+#: judge/views/user_import.py
+msgid "Use a positive page number."
+msgstr "Số trang phải là số nguyên dương."
+
+#: judge/views/user_import.py
+msgid "Use a superuser session to import users."
+msgstr "Hãy dùng phiên đăng nhập superuser để nhập tài khoản."
+
+#: judge/utils/user_import.py
+msgid "Use a valid import operation and digest."
+msgstr "Cần thao tác nhập và mã kiểm tra hợp lệ."
+
+#: judge/utils/user_import.py
+msgid "Use a valid import request object."
+msgstr "Cần dữ liệu yêu cầu nhập hợp lệ."
+
+#: judge/utils/user_import.py
+msgid "Use known, unique columns and put password_rotation last."
+msgstr "Chỉ dùng cột được hỗ trợ, không lặp tên cột và đặt password_rotation cuối cùng."
+
+#: judge/utils/user_import.py
+msgid "Use nonempty organization slugs separated by &."
+msgstr "Dùng slug tổ chức không rỗng, phân cách bằng &."
+
+#: judge/utils/user_import.py
+msgid "Use the exact spelling of the existing username."
+msgstr "Hãy dùng chính xác cách viết username của tài khoản đã tồn tại."
+
+#: judge/views/user_import.py
+msgid "Use this preview version and its original import key."
+msgstr "Hãy dùng đúng phiên bản xem trước và mã gốc của lượt nhập này."
+
+#: judge/utils/user_import.py
+msgid "User import is disabled."
+msgstr "Chức năng nhập tài khoản đang tắt."
+
+#: judge/views/user_import.py
+msgid "User import is temporarily unavailable. Retry the same request."
+msgstr "Chức năng nhập tài khoản tạm thời không khả dụng. Hãy thử lại đúng yêu cầu này."
+
+#: judge/utils/user_import.py
+msgid "User import requires MySQL or MariaDB."
+msgstr "Chức năng nhập tài khoản cần MySQL hoặc MariaDB."
+
+#: judge/views/user_import.py
+msgid "Validating the CSV. No accounts have been changed."
+msgstr "Đang kiểm tra CSV. Chưa có tài khoản nào thay đổi."
+
+#: judge/views/user_import.py
+msgid "Validation could not be queued. Retry this upload with the same key."
+msgstr "Chưa thể đưa yêu cầu kiểm tra vào hàng đợi. Hãy gửi lại lượt tải lên bằng đúng mã hiện tại."
+
+#: judge/tasks/user_import.py judge/utils/user_import_validation.py
+msgid "Validation could not finish. Upload the CSV again."
+msgstr "Không thể hoàn tất kiểm tra. Hãy tải CSV lên lại."
+
+#: judge/utils/user_import_validation.py
+msgid "Wait for your active import to finish validating or running."
+msgstr "Hãy chờ lượt nhập hiện tại kiểm tra hoặc thực thi xong."
+
+#: templates/user/import/index.html
+msgid "name sets the display name; school is stored as school text, not a surname."
+msgstr "name đặt tên hiển thị; school lưu tên trường, không phải họ của người dùng."
+
+#: judge/utils/user_import.py
+msgid "password_rotation must be true or false."
+msgstr "password_rotation phải là true hoặc false."
+
+#: templates/user/import/index.html
+msgid "username and password_rotation are required. password_rotation must be the last column and contain true or false."
+msgstr "Bắt buộc có username và password_rotation. password_rotation phải là cột cuối và chứa true hoặc false."
+
+#: judge/views/user_import.py
+msgid "Import completed. Every account change was saved."
+msgstr "Nhập tài khoản thành công. Toàn bộ thay đổi đã được lưu."
+
+#: judge/views/user_import.py
+msgid "Import is running. Changes are not committed yet."
+msgstr "Đang thực thi lượt nhập. Các thay đổi chưa được lưu."
+
+#: judge/views/user_import.py
+msgid "Waiting to import. No accounts have been changed."
+msgstr "Đang chờ thực thi lượt nhập. Chưa có tài khoản nào thay đổi."
+
+#: judge/views/user_import.py
+msgid "Validation is waiting for the queue. Retry the same CSV; the import key will be reused."
+msgstr "Chưa thể xếp hàng kiểm tra. Hãy gửi lại đúng CSV; mã lượt nhập sẽ được giữ nguyên."
+
+#: judge/middleware.py
+msgid "Unable to check the superuser session."
+msgstr "Không thể kiểm tra phiên đăng nhập superuser."

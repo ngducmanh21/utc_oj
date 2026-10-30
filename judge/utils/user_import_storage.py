@@ -77,7 +77,7 @@ def get_prepared_import_password(row, *, now=None):
 
 
 @sensitive_variables()
-def prepare_import_password(row, candidate_user, *, now=None):
+def prepare_import_password(row, candidate_user, *, now=None, validation_token=None):
     """Validate/hash outside locks, then swap the row secret atomically.
 
     candidate_user is the unsaved post-import account state. This function never
@@ -102,6 +102,11 @@ def prepare_import_password(row, candidate_user, *, now=None):
     # No network/expensive hash work occurs while holding the row lock.
     current_time = now or timezone.now()
     with transaction.atomic():
+        if validation_token is not None:
+            from judge.utils.user_import_validation import locked_validation
+            locked_validation(row.batch_id, row.batch.version, validation_token)
+        else:
+            UserImportBatch.objects.select_for_update().get(pk=row.batch_id)
         current = UserImportRow.objects.select_for_update().select_related('batch').get(pk=row.pk)
         if (current.batch.status != UserImportBatch.Status.VALIDATING or
                 current.password_ciphertext != row.password_ciphertext or current.input_data != row.input_data or

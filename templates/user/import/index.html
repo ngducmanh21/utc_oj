@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title_ruler %}{% endblock %}
+{% block title_row %}{% include "user/user-list-tabs.html" %}{% endblock %}
+{% block media %}
+    <link rel="stylesheet" href="{{ static('user-import.css') }}">
+{% endblock %}
+{% block js_media %}
+    <script src="{{ static('user-import.js') }}" defer></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            window.initUserImport(JSON.parse({{ import_config_json|htmltojs }}));
+        });
+    </script>
+{% endblock %}
+
+{% block body %}
+<div id="user-import">
+    <section class="import-panel" aria-labelledby="import-upload-title">
+        <h3 id="import-upload-title">{{ _('Upload a user CSV') }}</h3>
+        <p>{{ _('Upload the CSV, review every change, then confirm the import. Validation does not change accounts.') }}</p>
+        <p><a href="{{ url('user_import_sample') }}">{{ _('Download sample CSV') }}</a>
+            · {{ _('UTF-8, comma separated. Maximum %(rows)s rows and %(size)s bytes.', rows=max_rows, size=max_bytes) }}</p>
+        <details>
+            <summary>{{ _('CSV columns and update rules') }}</summary>
+            <p><code>{{ csv_fields|join(',') }}</code></p>
+            <ul>
+                <li>{{ _('username and password_rotation are required. password_rotation must be the last column and contain true or false.') }}</li>
+                <li>{{ _('A new account requires a password. Blank fields on existing accounts keep their current values.') }}</li>
+                <li>{{ _('name sets the display name; school is stored as school text, not a surname.') }}</li>
+                <li>{{ _('Separate existing organization slugs with &. Memberships are added; existing memberships are kept.') }}</li>
+                <li>{{ _('Mute applies to every row, including existing accounts, and limits comments, tickets and display features.') }}</li>
+            </ul>
+        </details>
+        <form id="import-upload-form" method="post" enctype="multipart/form-data" action="{{ url('user_import_post_file') }}">
+            {% csrf_token %}
+            <p><label for="import-csv-file">{{ _('CSV file') }}</label>
+                <input id="import-csv-file" name="csv_file" type="file" accept=".csv,text/csv" required></p>
+            <p><label><input id="import-muted" name="muted" type="checkbox" checked>
+                {{ _('Mute all imported accounts') }}</label></p>
+            <button id="import-upload" type="submit">{{ _('Upload and preview') }}</button>
+        </form>
+        <noscript><p>{{ _('Enable JavaScript to upload and review this CSV safely.') }}</p></noscript>
+    </section>
+
+    <section class="import-panel" aria-labelledby="import-preview-title">
+        <h3 id="import-preview-title">{{ _('Import preview') }}</h3>
+        <p id="import-status" role="status" aria-live="polite">{{ _('Choose a CSV file to start.') }}</p>
+        <p id="import-error" role="alert" hidden></p>
+        <p id="import-summary"></p>
+        <p id="import-expiry"></p>
+        <button id="import-check" type="button" hidden>{{ _('Check status') }}</button>
+        <ul id="import-errors"></ul>
+        <div id="import-table-wrap" class="h-scrollable-table" hidden>
+            <table class="table striped">
+                <thead><tr><th>{{ _('CSV line') }}</th><th>{{ _('Username') }}</th><th>{{ _('Action') }}</th>
+                    <th>{{ _('Fields') }}</th><th>{{ _('Password') }}</th><th>{{ _('Organizations to add') }}</th>
+                    <th>{{ _('Mute') }}</th><th>{{ _('Password rotation') }}</th><th>{{ _('Errors') }}</th></tr></thead>
+                <tbody id="import-rows"></tbody>
+            </table>
+        </div>
+        <div id="import-pagination" hidden>
+            <button id="import-previous" type="button">{{ _('Previous') }}</button>
+            <span id="import-page"></span>
+            <button id="import-next" type="button">{{ _('Next') }}</button>
+        </div>
+        <div id="import-confirmation" hidden>
+            <p><label><input id="import-confirmed" type="checkbox">
+                {{ _('I reviewed the account updates, password changes, password rotation and mute settings for every row.') }}</label></p>
+            <button id="import-submit" type="button" disabled>{{ _('Confirm import') }}</button>
+            <p>{{ _('Import execution is not available yet.') }}</p>
+        </div>
+    </section>
+</div>
+{% endblock %}

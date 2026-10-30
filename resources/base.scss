@@ -389,7 +389,9 @@ math {
 
 @media (max-width: 760px) {
     #content {
-        width: auto;
+        box-sizing: border-box;
+        min-width: 0;
+        width: 100%;
         padding: 0 5px;
     }
 }

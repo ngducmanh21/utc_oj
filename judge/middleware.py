@@ -40,6 +40,8 @@ class ShortCircuitMiddleware:
             callback, args, kwargs = None, None, None
 
         request.login_policy_api = getattr(callback, 'login_policy_api', False)
+        request.user_import_api = getattr(callback, 'user_import_api', False)
+        request.user_import_page = getattr(callback, 'user_import_page', False)
         if getattr(callback, 'short_circuit_middleware', False):
             return callback(request, *args, **kwargs)
         return self.get_response(request)
@@ -52,6 +54,21 @@ class DMOJLoginMiddleware(object):
     def __call__(self, request):
         # Don't require user to change their password in contest mode
         request.official_contest_mode = settings.VNOJ_OFFICIAL_CONTEST_MODE
+        if getattr(request, 'user_import_api', False) or getattr(request, 'user_import_page', False):
+            from judge.views.user_import import import_error, import_session_error
+            request.no_profile_update = True
+            request.profile = None
+            try:
+                request.profile = getattr(request.user, 'profile', None)
+                if settings.DMOJ_USER_IMPORT_ENABLED:
+                    error = import_session_error(request)
+                    if error is not None:
+                        # The HTML view supplies the ordinary login redirect.
+                        if not (getattr(request, 'user_import_page', False) and error.status_code == 401):
+                            return error
+            except DatabaseError:
+                return import_error('unavailable', _('Unable to check the superuser session.'), 503)
+            return self.get_response(request)
         if getattr(request, 'login_policy_api', False):
             try:
                 error = policy_session_error(request)
@@ -167,6 +184,11 @@ class ContestMiddleware(object):
         self.get_response = get_response
 
     def __call__(self, request):
+        if getattr(request, 'user_import_api', False) or getattr(request, 'user_import_page', False):
+            # Preview requests must not run unrelated Profile/contest maintenance.
+            request.in_contest = False
+            request.participation = None
+            return self.get_response(request)
         profile = request.profile
         if profile:
             profile.update_contest()
@@ -186,6 +208,9 @@ class APIMiddleware(object):
 
     def __call__(self, request):
         full_token = request.headers.get('authorization', '')
+        if full_token and (getattr(request, 'user_import_api', False) or getattr(request, 'user_import_page', False)):
+            from judge.views.user_import import import_error
+            return import_error('session_required', _('Use a superuser session to import users.'), 403)
         if full_token and getattr(request, 'login_policy_api', False):
             return policy_error('session_required', _('Use an administrator session for this operation.'), 403)
         if not full_token:

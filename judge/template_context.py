@@ -66,6 +66,7 @@ def general_info(request):
         'REGISTRATION_OPEN': settings.REGISTRATION_OPEN,
         'perms': PermWrapper(request.user),
         'HAS_WEBAUTHN': bool(settings.WEBAUTHN_RP_ID),
+        'USER_IMPORT_ENABLED': settings.DMOJ_USER_IMPORT_ENABLED,
     }
     if hasattr(request.user, 'profile'):
         info['NOTIFICATION_SECRET'] = request.profile.notification_secret

@@ -4,4 +4,7 @@
     {{ make_tab('list', 'fa-users', url('user_list'), _('Leaderboard')) }}
     {{ make_tab('contributor', 'fa-thumbs-up', url('contributors_list'), _('Contributors')) }}
     {{ make_tab('organizations', 'fa-university', url('organization_list'), _('Organizations')) }}
+    {% if USER_IMPORT_ENABLED and request.user.is_active and request.user.is_staff and request.user.is_superuser %}
+        {{ make_tab('import_users', 'fa-upload', url('user_import'), _('Import users')) }}
+    {% endif %}
 {% endblock %}
