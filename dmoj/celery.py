@@ -46,6 +46,21 @@ app.conf.beat_schedule = {
     },
 }
 
+if settings.DMOJ_USER_IMPORT_ENABLED:
+    app.conf.beat_schedule.update({
+        'user-import-recovery': {
+            'task': 'judge.tasks.user_import.maintain_user_imports',
+            'schedule': 60.0,
+            'options': {'expires': 60},
+        },
+        'user-import-cleanup': {
+            'task': 'judge.tasks.user_import.maintain_user_imports',
+            'schedule': 3600.0,
+            'kwargs': {'cleanup': True},
+            'options': {'expires': 3600},
+        },
+    })
+
 
 @task_failure.connect()
 def celery_failure_log(sender, task_id, exception, traceback, *args, **kwargs):

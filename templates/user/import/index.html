@@ -49,13 +49,16 @@
         <p id="import-error" role="alert" hidden></p>
         <p id="import-summary"></p>
         <p id="import-expiry"></p>
+        <p id="import-processing" aria-live="polite" hidden></p>
+        <progress id="import-progress" hidden></progress>
         <button id="import-check" type="button" hidden>{{ _('Check status') }}</button>
         <ul id="import-errors"></ul>
         <div id="import-table-wrap" class="h-scrollable-table" hidden>
             <table class="table striped">
                 <thead><tr><th>{{ _('CSV line') }}</th><th>{{ _('Username') }}</th><th>{{ _('Action') }}</th>
                     <th>{{ _('Fields') }}</th><th>{{ _('Password') }}</th><th>{{ _('Organizations to add') }}</th>
-                    <th>{{ _('Mute') }}</th><th>{{ _('Password rotation') }}</th><th>{{ _('Errors') }}</th></tr></thead>
+                    <th>{{ _('Mute') }}</th><th>{{ _('Password rotation') }}</th><th>{{ _('Errors') }}</th>
+                    <th>{{ _('Result') }}</th></tr></thead>
                 <tbody id="import-rows"></tbody>
             </table>
         </div>
@@ -65,10 +68,9 @@
             <button id="import-next" type="button">{{ _('Next') }}</button>
         </div>
         <div id="import-confirmation" hidden>
-            <p><label><input id="import-confirmed" type="checkbox">
+            <p id="import-review"><label><input id="import-confirmed" type="checkbox">
                 {{ _('I reviewed the account updates, password changes, password rotation and mute settings for every row.') }}</label></p>
             <button id="import-submit" type="button" disabled>{{ _('Confirm import') }}</button>
-            <p>{{ _('Import execution is not available yet.') }}</p>
         </div>
     </section>
 </div>

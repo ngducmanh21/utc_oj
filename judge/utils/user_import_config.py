@@ -22,6 +22,9 @@ class UserImportConfig:
     report_seconds: int
     max_attempts: int
     validation_attempts: int
+    execution_lease_seconds: int
+    dispatch_seconds: int
+    progress_cache: str
     active_key_id: str
     keys: dict = field(repr=False)
     digest_key: bytes = field(repr=False)
@@ -46,7 +49,8 @@ def get_user_import_config():
         raise ImproperlyConfigured('DMOJ_USER_IMPORT_ENABLED must be a boolean.')
     numbers = {}
     for name in ('MAX_BYTES', 'MAX_ROWS', 'MAX_PASSWORD_LENGTH', 'PREVIEW_SECONDS', 'PASSWORD_SECONDS',
-                 'PREPARED_PASSWORD_SECONDS', 'REPORT_SECONDS', 'MAX_ATTEMPTS', 'VALIDATION_ATTEMPTS'):
+                 'PREPARED_PASSWORD_SECONDS', 'REPORT_SECONDS', 'MAX_ATTEMPTS', 'VALIDATION_ATTEMPTS',
+                 'EXECUTION_LEASE_SECONDS', 'DISPATCH_SECONDS'):
         value = getattr(settings, 'DMOJ_USER_IMPORT_' + name)
         if type(value) is not int or value <= 0:
             raise ImproperlyConfigured('DMOJ_USER_IMPORT_%s must be a positive integer.' % name)
@@ -55,6 +59,9 @@ def get_user_import_config():
         raise ImproperlyConfigured('User import password, preview and prepared password TTLs must be ordered.')
     if numbers['report_seconds'] < numbers['prepared_password_seconds']:
         raise ImproperlyConfigured('User import reports must outlive prepared passwords.')
+    progress_cache = settings.DMOJ_USER_IMPORT_PROGRESS_CACHE
+    if not isinstance(progress_cache, str) or progress_cache not in settings.CACHES:
+        raise ImproperlyConfigured('DMOJ_USER_IMPORT_PROGRESS_CACHE must identify a configured cache alias.')
     keys = settings.DMOJ_USER_IMPORT_KEYS
     active = settings.DMOJ_USER_IMPORT_ACTIVE_KEY_ID
     digest = settings.DMOJ_USER_IMPORT_DIGEST_KEY
@@ -74,4 +81,5 @@ def get_user_import_config():
         raise ImproperlyConfigured('User import cannot run plaintext password_changed callbacks from prepared hashes.')
     if digest_key and digest_key in {_key(value, 'DMOJ_USER_IMPORT_KEYS') for value in keys.values()}:
         raise ImproperlyConfigured('User import encryption and digest keys must be different.')
-    return UserImportConfig(enabled=enabled, active_key_id=active, keys=dict(keys), digest_key=digest_key, **numbers)
+    return UserImportConfig(enabled=enabled, active_key_id=active, keys=dict(keys), digest_key=digest_key,
+                            progress_cache=progress_cache, **numbers)

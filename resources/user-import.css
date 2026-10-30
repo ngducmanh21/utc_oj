@@ -16,6 +16,7 @@
 #import-confirmation { margin-top: 1em; padding-top: .75em; border-top: 1px solid #8886; }
 #import-status { font-weight: bold; }
 #import-summary { font-variant-numeric: tabular-nums; }
+#import-progress { width: 100%; accent-color: #287cbb; }
 @media (max-width: 600px) {
     #user-import .import-panel { padding: .65em; }
     #import-rows td { min-width: 6em; }

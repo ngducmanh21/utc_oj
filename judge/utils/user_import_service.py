@@ -6,6 +6,7 @@ This module has no HTTP, queue dispatch, retry loop or account registration mail
 """
 
 import hashlib
+import logging
 import re
 from dataclasses import dataclass
 from datetime import timedelta
@@ -30,6 +31,7 @@ from judge.utils.user_import_storage import get_prepared_import_password
 
 USER_FIELDS = {'name': 'first_name', 'school': 'last_name', 'email': 'email'}
 INPUT_FIELDS = {'username', 'name', 'school', 'email', 'organizations', 'password_rotation', 'password_provided'}
+logger = logging.getLogger(__name__)
 
 
 class ImportBatchConflict(UserImportError):
@@ -312,6 +314,30 @@ def finalize_import_preview(actor, batch_id, expected_version):
     return batch
 
 
+@transaction.atomic
+def verify_import_submission(actor, batch_id, expected_version):
+    """Check the immutable preview and current actor, without locking targets.
+
+    The executor checks every live target baseline under the full account lock.
+    Submit only binds the already reviewed snapshot; it never refreshes a diff.
+    """
+    require_user_import_enabled()
+    batch = _batch(actor, batch_id, expected_version)
+    if (batch.status != UserImportBatch.Status.PREVIEW_READY or
+            timezone.now() >= min(batch.preview_expires_at, batch.secret_expires_at)):
+        raise ImportBatchConflict('expired_snapshot')
+    rows = _rows(batch)
+    current_actor = User.objects.select_for_update().get(pk=actor.pk)
+    _actor_guard(current_actor)
+    profile = Profile.objects.select_for_update().get(user=current_actor)
+    if not constant_time_compare(batch.snapshot_digest, _digest(batch, rows, current_actor, profile, 'preview')):
+        raise ImportBatchConflict()
+    if any(row.status != UserImportRow.Status.VALID for row in rows):
+        raise ImportBatchConflict('invalid_rows')
+    _prepared_passwords(rows)
+    return batch
+
+
 def _result(batch, replayed=False):
     return ImportBatchResult(batch.pk, batch.version, batch.applied_rows, batch.created_users,
                              batch.updated_users, replayed)
@@ -368,7 +394,7 @@ def _apply_row(actor, batch, row, users, profiles, encoded):
 
 
 @sensitive_variables()
-def execute_import_batch(actor, batch_id, expected_version, attempt_token):
+def execute_import_batch(actor, batch_id, expected_version, attempt_token, *, progress=None):
     """Apply a claimed batch once. Failure propagates after the outer rollback.
 
     The queue/recovery layer owns RUNNING, attempt budget and sanitized failure
@@ -390,7 +416,11 @@ def execute_import_batch(actor, batch_id, expected_version, attempt_token):
                 not 1 <= batch.execution_attempts <= config.max_attempts or
                 batch.lease_expires_at is None or batch.lease_expires_at <= now):
             raise UserImportError('stale_attempt', _('This worker no longer owns the batch.'))
-        if batch.errors or now >= batch.preview_expires_at or now >= batch.secret_expires_at:
+        # An accepted submission uses the secret/execution deadline. The preview
+        # deadline limits confirmation, not a job already waiting in the queue.
+        submitted = batch.operations.filter(action='submit').exists()
+        if (batch.errors or now >= batch.secret_expires_at or
+                (not submitted and now >= batch.preview_expires_at)):
             raise ImportBatchConflict('expired_snapshot')
         if any(row.status != UserImportRow.Status.VALID for row in rows):
             raise ImportBatchConflict('invalid_rows')
@@ -401,8 +431,17 @@ def execute_import_batch(actor, batch_id, expected_version, attempt_token):
         _check_baselines(rows, users, profiles, plans, memberships)
         passwords = _prepared_passwords(rows)
         created = 0
-        for row in rows:
-            created += _apply_row(current_actor, batch, row, users, profiles, passwords[row.pk])
+        for number, row in enumerate(rows, 1):
+            try:
+                created += _apply_row(current_actor, batch, row, users, profiles, passwords[row.pk])
+            except Exception as error:
+                error.import_row = (row.row_number, row.line_number)
+                raise
+            if progress is not None and (number == len(rows) or number % max(1, len(rows) // 100) == 0):
+                try:
+                    progress(number, len(rows))
+                except Exception:
+                    logger.warning('User import progress callback failed for batch %s', batch.pk)
         if timezone.now() >= batch.secret_expires_at:
             raise ImportBatchConflict('expired_secret')
         batch.status = UserImportBatch.Status.COMPLETED
@@ -411,8 +450,12 @@ def execute_import_batch(actor, batch_id, expected_version, attempt_token):
         batch.updated_users = len(rows) - created
         batch.finished_at = timezone.now()
         batch.lease_expires_at = None
+        # Persist repair intent with the account commit, so a worker lost before
+        # ACK/cache callbacks cannot lose the independent cache repair work.
+        batch.errors = [ImportIssue('cache_repair_pending',
+                                    _('Accounts were saved. Display caches are waiting for repair.')).as_dict()]
         batch.save(update_fields=['status', 'applied_rows', 'created_users', 'updated_users',
-                                  'finished_at', 'lease_expires_at', 'updated_at'])
+                                  'finished_at', 'lease_expires_at', 'errors', 'updated_at'])
         return _result(batch)
 
 

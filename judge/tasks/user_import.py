@@ -1,4 +1,4 @@
-"""Validation tasks carry IDs only; importer results stay behind the owner API."""
+"""Validation/execution carry IDs only; results stay behind the owner API."""
 
 import logging
 import random
@@ -7,18 +7,23 @@ import uuid
 from celery import shared_task
 from celery.exceptions import Retry
 from django.core.exceptions import PermissionDenied
-from django.db import DatabaseError, OperationalError, transaction
+from django.db import DatabaseError, OperationalError, connections, transaction
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.debug import sensitive_variables
 
 from judge.models import UserImportBatch
 from judge.utils.user_import import ImportIssue, UserImportError, require_user_import_enabled
-from judge.utils.user_import_service import ImportBatchConflict, capture_import_snapshot, finalize_import_preview
+from judge.utils.user_import_execution import LOCK_BUSY, claim_import_execution, database_error_code, \
+    execution_failure, reconcile_import_execution, repair_import_cache
+from judge.utils.user_import_progress import write_import_progress
+from judge.utils.user_import_service import ImportBatchConflict, capture_import_snapshot, execute_import_batch, \
+    finalize_import_preview
 from judge.utils.user_import_storage import prepare_import_password
 from judge.utils.user_import_validation import claim_import_validation, finish_import_validation, \
     invalid_row_candidates, locked_validation, release_import_validation, resolve_validation_rows
 
-__all__ = ('validate_user_import',)
+__all__ = ('validate_user_import', 'execute_user_import', 'repair_user_import_cache', 'maintain_user_imports')
 logger = logging.getLogger(__name__)
 
 
@@ -41,6 +46,92 @@ def dispatch_import_validation(batch_id, version):
         UserImportBatch.objects.filter(pk=batch_id, version=version, status=UserImportBatch.Status.VALIDATING,
                                        task_id=task_id, attempt_token__isnull=True).update(task_id='')
         return False
+
+
+def dispatch_import_execution(batch_id, version):
+    require_user_import_enabled()
+    task_id = str(uuid.uuid4())
+    try:
+        with transaction.atomic():
+            batch = UserImportBatch.objects.select_for_update(nowait=True).get(pk=batch_id)
+            if batch.version != version or batch.status != UserImportBatch.Status.QUEUED or batch.task_id:
+                return True
+            countdown = max(0, (batch.lease_expires_at - timezone.now()).total_seconds()) \
+                if batch.lease_expires_at else 0
+            batch.task_id = task_id
+            batch.save(update_fields=['task_id', 'updated_at'])
+        try:
+            execute_user_import.apply_async(args=[str(batch_id), version], task_id=task_id,
+                                            countdown=countdown, retry=False)
+            return True
+        except Exception:
+            logger.warning('User import execution dispatch unavailable for batch %s', batch_id)
+            UserImportBatch.objects.filter(pk=batch_id, version=version, status='QUEUED', task_id=task_id,
+                                           attempt_token__isnull=True).update(task_id='')
+            return False
+    except OperationalError as error:
+        if database_error_code(error) in LOCK_BUSY:
+            return True
+        raise
+
+
+@shared_task(bind=True, ignore_result=True, acks_late=True, reject_on_worker_lost=True)
+@sensitive_variables()
+def execute_user_import(self, batch_id, version):
+    token = None
+    outcome = None
+    try:
+        if connections['default'].in_atomic_block:
+            raise RuntimeError('Execution tasks require an outermost account transaction.')
+        claimed = claim_import_execution(batch_id, version)
+        if claimed is None:
+            if UserImportBatch.objects.filter(pk=batch_id, version=version, status='COMPLETED').exists():
+                repair_import_cache(batch_id, version)
+            return
+        batch, actor = claimed
+        token = batch.attempt_token
+        write_import_progress(batch_id, token, 0, batch.total_rows)
+        try:
+            execute_import_batch(actor, batch_id, version, token, progress=lambda done, total:
+                                 write_import_progress(batch_id, token, done, total))
+            outcome = 'completed'
+        except Exception as error:
+            failure = execution_failure(error)
+            # Do not infer rollback from the exception, including a COMMIT error.
+            # A new primary connection must acquire the batch lock and read it.
+            connections['default'].close()
+            outcome = reconcile_import_execution(batch_id, version, token=token, failure=failure)
+        if outcome == 'queued':
+            dispatch_import_execution(batch_id, version)
+        elif outcome == 'completed':
+            repair_import_cache(batch_id, version)
+    except UserImportError as error:
+        if error.code != 'disabled':
+            logger.warning('User import execution interrupted for batch %s', batch_id)
+    except Exception:
+        # Claim/repair/reconciliation can themselves lose their DB connection.
+        # Leave the durable marker for recovery; never log row/exception content.
+        logger.warning('User import execution outcome pending for batch %s', batch_id)
+
+
+@shared_task(ignore_result=True)
+def repair_user_import_cache(batch_id, version):
+    try:
+        repair_import_cache(batch_id, version)
+    except Exception:
+        logger.warning('User import cache repair interrupted for batch %s', batch_id)
+
+
+@shared_task(ignore_result=True)
+def maintain_user_imports(cleanup=False):
+    from judge.utils.user_import_maintenance import cleanup_import_batches, recover_import_batches
+    try:
+        if cleanup:
+            cleanup_import_batches()
+        else:
+            recover_import_batches()
+    except Exception:
+        logger.warning('User import maintenance interrupted')
 
 
 @shared_task(bind=True, ignore_result=True, acks_late=True, reject_on_worker_lost=True)

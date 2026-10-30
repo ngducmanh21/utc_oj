@@ -10499,3 +10499,69 @@ msgstr "Chưa thể xếp hàng kiểm tra. Hãy gửi lại đúng CSV; mã lư
 #: judge/middleware.py
 msgid "Unable to check the superuser session."
 msgstr "Không thể kiểm tra phiên đăng nhập superuser."
+
+#: judge/utils/user_import_service.py judge/utils/user_import_execution.py
+msgid "Accounts were saved. Display caches are waiting for repair."
+msgstr "Tài khoản đã được lưu. Bộ nhớ đệm hiển thị đang chờ khôi phục."
+
+#: judge/views/user_import.py
+msgid "Checking the execution outcome. Keep this import open; do not start another import."
+msgstr "Đang xác minh kết quả thực thi. Hãy giữ lượt nhập này mở và chưa bắt đầu lượt khác."
+
+#: judge/views/user_import.py
+msgid "Detailed rows have expired. This import result is retained to prevent duplicate execution."
+msgstr "Chi tiết các dòng đã hết thời hạn lưu. Kết quả lượt nhập vẫn được giữ để tránh thực thi lặp."
+
+#: judge/utils/user_import_execution.py
+msgid "Import attempts were exhausted. No accounts were changed."
+msgstr "Đã hết số lần thử nhập. Không có tài khoản nào thay đổi."
+
+#: judge/views/user_import.py
+msgid "Import is confirmed but could not be queued. Retry the same request."
+msgstr "Lượt nhập đã được xác nhận nhưng chưa thể đưa vào hàng đợi. Hãy thử lại đúng yêu cầu này."
+
+#: judge/views/user_import.py
+msgid "Mute changed. Upload the CSV again to review a new preview before confirming."
+msgstr "Tùy chọn mute đã thay đổi. Hãy tải CSV lên lại để xem bản mới trước khi xác nhận."
+
+#: judge/views/user_import.py
+msgid "Not applied"
+msgstr "Chưa áp dụng"
+
+#: judge/views/user_import.py
+#, python-brace-format
+msgid "Processing {processed}/{total}. These changes are not committed yet."
+msgstr "Đang xử lý {processed}/{total}. Các thay đổi này chưa được lưu."
+
+#: judge/views/user_import.py
+msgid "Retry import request"
+msgstr "Gửi lại yêu cầu nhập"
+
+#: judge/views/user_import.py
+msgid "Saved"
+msgstr "Đã lưu"
+
+#: judge/views/user_import.py
+#, python-brace-format
+msgid "Saved: {total}. Created: {created}. Updated: {updated}."
+msgstr "Đã lưu: {total}. Tạo mới: {created}. Cập nhật: {updated}."
+
+#: judge/utils/user_import_execution.py
+msgid "The import failed. No accounts were changed."
+msgstr "Lượt nhập thất bại. Không có tài khoản nào thay đổi."
+
+#: judge/utils/user_import_execution.py
+msgid "The import is being confirmed. Check its status and retry."
+msgstr "Lượt nhập đang được xác nhận. Hãy kiểm tra trạng thái rồi thử lại."
+
+#: judge/views/user_import.py
+msgid "The import is confirmed and waiting for the queue. Retry with the same import key."
+msgstr "Lượt nhập đã được xác nhận và đang chờ hàng đợi. Hãy thử lại bằng đúng mã lượt nhập."
+
+#: judge/utils/user_import_execution.py
+msgid "The worker stopped. The whole import will be retried."
+msgstr "Worker đã dừng. Toàn bộ lượt nhập sẽ được thử lại."
+
+#: judge/utils/user_import_execution.py
+msgid "This import has no valid confirmation. Upload the CSV again."
+msgstr "Lượt nhập này chưa có xác nhận hợp lệ. Hãy tải CSV lên lại."

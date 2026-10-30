@@ -36,8 +36,10 @@
             el('upload').disabled = !!locked;
             el('check').hidden = !key;
             el('check').disabled = busy;
-            // M4 will enable execution only after server support is installed.
-            el('submit').disabled = true;
+            const ready = batch && batch.status === 'PREVIEW_READY' && batch.execution_available;
+            const retrySubmit = batch && batch.status === 'QUEUED' && batch.execution_dispatch_pending;
+            el('submit').disabled = busy || uncertain ||
+                !(retrySubmit || (ready && el('confirmed').checked && muted.checked === batch.muted));
             el('previous').disabled = busy || !batch || batch.page <= 1;
             el('next').disabled = busy || !batch || batch.page >= batch.pages;
         }
@@ -71,12 +73,24 @@
                 batch.status === 'INVALID' ? strings.invalid : batch.status === 'COMPLETED' ? strings.completed :
                     batch.status === 'QUEUED' ? strings.queued : batch.status === 'RUNNING' ? strings.running : strings.closed;
             if (batch.validation_dispatch_pending) el('status').textContent = strings.retry_upload;
-            el('summary').textContent = format(strings.summary, {
+            if (batch.status === 'RUNNING' && !batch.progress) el('status').textContent = strings.verifying;
+            if (batch.execution_dispatch_pending) el('status').textContent = strings.queue_wait;
+            el('summary').textContent = batch.status === 'COMPLETED' ? format(strings.result, {
+                total: batch.applied_rows, created: batch.created_users, updated: batch.updated_users,
+            }) : format(strings.summary, {
                 total: batch.total_rows, prepared: batch.prepared_passwords, applied: batch.applied_rows,
             });
             el('expiry').textContent = ready ? format(strings.expiry, {
                 time: new Date(batch.preview_expires_at).toLocaleString(),
             }) : '';
+            el('processing').hidden = !batch.progress;
+            el('progress').hidden = !batch.progress;
+            if (batch.progress) {
+                el('processing').textContent = format(strings.progress, batch.progress);
+                el('progress').max = batch.progress.total;
+                el('progress').value = batch.progress.processed;
+            }
+            if (batch.report_expired) el('expiry').textContent = strings.report_expired;
             el('errors').replaceChildren();
             (batch.errors || []).forEach(issue => {
                 append(el('errors'), 'li', (issue.line ? strings.line + ' ' + issue.line + ': ' : '') +
@@ -105,12 +119,16 @@
                 if ((preview.warnings || []).includes('password_not_restored')) append(policy, 'p', strings.warning);
                 const errors = append(tr, 'td', '', 'import-row-errors');
                 row.errors.forEach(issue => append(errors, 'p', (issue.field ? issue.field + ': ' : '') + issue.message));
+                append(tr, 'td', row.status === 'SUCCESS' ? strings.saved : row.status === 'NOT_APPLIED' ?
+                    strings.not_applied : '');
                 el('rows').appendChild(tr);
             });
             el('table-wrap').hidden = !batch.rows.length;
             el('pagination').hidden = batch.pages <= 1;
             el('page').textContent = format(strings.page, {page: batch.page, pages: batch.pages});
-            el('confirmation').hidden = !ready;
+            el('confirmation').hidden = !ready && !batch.execution_dispatch_pending;
+            el('review').hidden = !ready;
+            el('submit').textContent = batch.execution_dispatch_pending ? strings.retry_submit : config.confirm_label;
             el('confirmed').checked = false;
             controls();
             clearTimeout(timer);
@@ -177,6 +195,29 @@
             finally { busy = false; controls(); }
         });
         el('check').addEventListener('click', () => check());
+        el('confirmed').addEventListener('change', controls);
+        muted.addEventListener('change', () => {
+            if (batch && batch.status === 'PREVIEW_READY' && muted.checked !== batch.muted) message(strings.mute_changed);
+            else message('');
+            controls();
+        });
+        el('submit').addEventListener('click', async () => {
+            if (busy || uncertain || !batch || el('submit').disabled) return;
+            busy = true;
+            uncertain = true;
+            controls();
+            message('');
+            persist();
+            try {
+                const response = await fetch(config.submit_url, {method: 'POST', credentials: 'same-origin',
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf, 'Idempotency-Key': key},
+                    body: JSON.stringify({batch_id: batch.id, version: batch.version, confirmed: true})});
+                const data = await response.json();
+                if (data.batch) render(data.batch);
+                if (!response.ok) message(data.error ? data.error.message : strings.unavailable);
+            } catch (_) { message(strings.network); }
+            finally { busy = false; controls(); }
+        });
         el('previous').addEventListener('click', () => check(batch.page - 1));
         el('next').addEventListener('click', () => check(batch.page + 1));
         root.addEventListener('pagehide', () => clearTimeout(timer));

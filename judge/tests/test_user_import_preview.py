@@ -63,6 +63,9 @@ class ImportPreviewAPITests(PreviewData, TestCase):
         self.dispatch = patch('judge.tasks.user_import.validate_user_import.apply_async')
         self.published = self.dispatch.start()
         self.addCleanup(self.dispatch.stop)
+        execution = patch('judge.tasks.user_import.execute_user_import.apply_async')
+        self.execution_published = execution.start()
+        self.addCleanup(execution.stop)
         response = self.client.get(reverse('user_import'))
         self.assertEqual(response.status_code, 200, response.content[:500])
         self.csrf = self.client.cookies[settings.CSRF_COOKIE_NAME].value
@@ -179,7 +182,7 @@ class ImportPreviewAPITests(PreviewData, TestCase):
             self.assertNotIn(value, status.content.decode())
             self.assertNotIn(value, html)
         self.assertFalse(batch.rows.exclude(password_ciphertext='').exists())
-        self.assertFalse(data['execution_available'])
+        self.assertTrue(data['execution_available'])
 
     def test_sample_has_exactly_the_seven_headers_and_no_account_row(self):
         response = self.client.get(reverse('user_import_sample'))
@@ -324,18 +327,19 @@ class ImportPreviewAPITests(PreviewData, TestCase):
         self.assertEqual(retried.json()['batch']['id'], batch_id)
         self.assertEqual(UserImportBatch.objects.count(), 1)
 
-    def test_submit_locked_until_m4_and_rejects_client_snapshot_or_wrong_key(self):
+    def test_submit_queues_snapshot_only_and_rejects_client_snapshot_or_wrong_key(self):
         batch = self.validate(self.reserve())
         before = self.account_state()
         response = self.submit(batch)
-        self.assertEqual(response.status_code, 409)
-        self.assertEqual(response.json()['error']['code'], 'execution_unavailable')
+        self.assertEqual(response.status_code, 202)
+        self.assertEqual(response.json()['batch']['status'], 'QUEUED')
         self.assertEqual(self.submit(batch, key=uuid.uuid4()).status_code, 409)
         for field in ('rows', 'password', 'muted'):
             data = {'batch_id': str(batch.pk), 'version': batch.version, 'confirmed': True, field: 'injected'}
             self.assertEqual(self.submit(batch, data=data).status_code, 422)
         self.assertEqual(self.account_state(), before)
-        self.assertFalse(UserImportOperation.objects.filter(action='submit').exists())
+        self.assertEqual(UserImportOperation.objects.filter(action='submit').count(), 1)
+        self.execution_published.assert_called_once()
 
     def test_completed_submit_replay_does_not_reissue_password_even_with_new_key(self):
         batch = self.validate(self.reserve())

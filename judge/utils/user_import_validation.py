@@ -13,6 +13,7 @@ from django.views.decorators.debug import sensitive_variables
 from judge.models import UserImportBatch, UserImportOperation, UserImportRow
 from judge.utils.user_import import ImportIssue, ImportRow, ParsedImport, UserImportError, \
     get_or_create_import_operation, parse_user_csv, require_user_import_enabled, validate_import_accounts
+from judge.utils.user_import_config import get_user_import_config
 from judge.utils.user_import_crypto import seal_import_secret
 
 ACTIVE_IMPORTS = (UserImportBatch.Status.VALIDATING, UserImportBatch.Status.QUEUED, UserImportBatch.Status.RUNNING)
@@ -42,7 +43,7 @@ def expire_import_preview(batch, *, now=None):
     now = now or timezone.now()
     if batch.status == UserImportBatch.Status.VALIDATING:
         deadline = min(batch.secret_expires_at, batch.created_at + timedelta(
-            seconds=require_user_import_enabled().password_seconds))
+            seconds=get_user_import_config().password_seconds))
         if now >= deadline:
             close_validation(batch, UserImportBatch.Status.EXPIRED, [ImportIssue(
                 'expired_secret', _('Temporary credentials expired. Upload the CSV again.'))])
@@ -118,20 +119,26 @@ def claim_import_validation(batch_id, version):
     batch.validation_attempts += 1
     batch.attempt_token = uuid.uuid4()
     # A validation lease never extends the lifetime of recoverable passwords.
-    batch.lease_expires_at = min(batch.secret_expires_at, batch.created_at + timedelta(
-        seconds=config.password_seconds))
+    batch.lease_expires_at = min(now + timedelta(seconds=config.execution_lease_seconds),
+                                 batch.secret_expires_at,
+                                 batch.created_at + timedelta(seconds=config.password_seconds))
     batch.save(update_fields=['validation_attempts', 'attempt_token', 'lease_expires_at', 'updated_at'])
     return batch
 
 
 def locked_validation(batch_id, version, token):
     """Call inside a short atomic block, including the following metadata write."""
-    require_user_import_enabled()
+    config = require_user_import_enabled()
     batch = UserImportBatch.objects.select_for_update().get(pk=batch_id)
     if (batch.version != version or batch.status != UserImportBatch.Status.VALIDATING or
             batch.attempt_token != token or not batch.lease_expires_at or
             timezone.now() >= batch.lease_expires_at):
         raise UserImportError('validation_superseded', _('This validation attempt is no longer current.'))
+    if batch.lease_expires_at < timezone.now() + timedelta(seconds=config.execution_lease_seconds / 2):
+        batch.lease_expires_at = min(timezone.now() + timedelta(seconds=config.execution_lease_seconds),
+                                     batch.secret_expires_at,
+                                     batch.created_at + timedelta(seconds=config.password_seconds))
+        batch.save(update_fields=['lease_expires_at', 'updated_at'])
     return batch
 
 
