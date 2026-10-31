@@ -22,6 +22,7 @@ class UserImportConfig:
     report_seconds: int
     max_attempts: int
     validation_attempts: int
+    validation_workers: int
     execution_lease_seconds: int
     dispatch_seconds: int
     progress_cache: str
@@ -50,11 +51,13 @@ def get_user_import_config():
     numbers = {}
     for name in ('MAX_BYTES', 'MAX_ROWS', 'MAX_PASSWORD_LENGTH', 'PREVIEW_SECONDS', 'PASSWORD_SECONDS',
                  'PREPARED_PASSWORD_SECONDS', 'REPORT_SECONDS', 'MAX_ATTEMPTS', 'VALIDATION_ATTEMPTS',
-                 'EXECUTION_LEASE_SECONDS', 'DISPATCH_SECONDS'):
+                 'EXECUTION_LEASE_SECONDS', 'DISPATCH_SECONDS', 'VALIDATION_WORKERS'):
         value = getattr(settings, 'DMOJ_USER_IMPORT_' + name)
         if type(value) is not int or value <= 0:
             raise ImproperlyConfigured('DMOJ_USER_IMPORT_%s must be a positive integer.' % name)
         numbers[name.lower()] = value
+    if numbers['validation_workers'] > 8:
+        raise ImproperlyConfigured('DMOJ_USER_IMPORT_VALIDATION_WORKERS must be between 1 and 8.')
     if not numbers['password_seconds'] <= numbers['preview_seconds'] <= numbers['prepared_password_seconds']:
         raise ImproperlyConfigured('User import password, preview and prepared password TTLs must be ordered.')
     if numbers['report_seconds'] < numbers['prepared_password_seconds']:

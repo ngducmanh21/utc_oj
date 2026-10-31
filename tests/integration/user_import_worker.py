@@ -4,6 +4,7 @@ import json
 import os
 import time
 from unittest.mock import patch
+from urllib.parse import urlsplit
 
 import django
 import redis
@@ -12,12 +13,24 @@ from django.conf import settings
 from django.db import OperationalError, connection
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'dmoj.user_import_worker_test_settings'
+if os.environ.get('UTCOJ_IMPORT_LOAD_TEST') == '1' and hasattr(os, 'sched_setaffinity'):
+    # The benchmark must not depend on a developer workstation's many cores.
+    os.sched_setaffinity(0, sorted(os.sched_getaffinity(0))[:2])
 django.setup()
 
 from dmoj.celery import app  # noqa: E402
 from judge.tasks import user_import as tasks  # noqa: E402
 from judge.utils import user_import_execution as execution, user_import_service as service  # noqa: E402
 from judge.utils.user_import_progress import write_import_progress  # noqa: E402
+
+if os.environ.get('UTCOJ_IMPORT_LOAD_TEST') == '1':
+    from judge.utils import pwned
+    endpoint = os.environ.get('UTCOJ_IMPORT_TEST_HIBP', '')
+    parsed = urlsplit(endpoint)
+    if (parsed.scheme != 'http' or parsed.hostname != '127.0.0.1' or not parsed.port or
+            parsed.username or parsed.password or parsed.path != '/range/{}' or parsed.query or parsed.fragment):
+        raise RuntimeError('The load harness requires a private loopback HIBP fixture.')
+    pwned.API_ENDPOINT = endpoint
 
 control = redis.Redis.from_url(settings.CELERY_BROKER_URL, socket_timeout=1, socket_connect_timeout=1)
 namespace = settings.CELERY_TASK_DEFAULT_QUEUE
@@ -90,7 +103,10 @@ def execute(actor, batch_id, version, token, **kwargs):
 
         with patch.object(connection, 'commit', side_effect=lose_response):
             return real_execute(actor, batch_id, version, token, **kwargs)
+    started = time.monotonic()
     result = real_execute(actor, batch_id, version, token, **kwargs)
+    if os.environ.get('UTCOJ_IMPORT_LOAD_TEST') == '1':
+        control.set(key('execution_seconds:' + str(batch_id)), time.monotonic() - started)
     if kind == 'after_commit_exit' and once(batch_id, kind):
         control.set(key('committed:' + str(batch_id)), '1')
         os._exit(71)

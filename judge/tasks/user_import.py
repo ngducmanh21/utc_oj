@@ -3,11 +3,14 @@
 import logging
 import random
 import uuid
+from concurrent.futures import ThreadPoolExecutor
+from queue import Empty, Queue
+from threading import Event
 
 from celery import shared_task
 from celery.exceptions import Retry
 from django.core.exceptions import PermissionDenied
-from django.db import DatabaseError, OperationalError, connections, transaction
+from django.db import DatabaseError, OperationalError, close_old_connections, connections, transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.debug import sensitive_variables
@@ -148,6 +151,54 @@ def validate_user_import(self, batch_id, version):
 
 
 @sensitive_variables()
+def _prepare_passwords(pairs, token, workers):
+    """Bound network/hash concurrency; join every writer before closing a batch.
+
+    The queue contains encrypted row objects and unsaved candidates only. Each
+    thread owns its DB connections and decrypts at most one credential at a time.
+    A fatal failure stops new work, then waits for in-flight writes to finish.
+    """
+    pending = Queue()
+    stopped = Event()
+    for row, candidate in pairs:
+        if not row.errors:
+            pending.put((row, candidate))
+
+    def consume(threaded):
+        issues = []
+        try:
+            if threaded:
+                close_old_connections()
+            while not stopped.is_set():
+                try:
+                    row, candidate = pending.get_nowait()
+                except Empty:
+                    break
+                try:
+                    prepare_import_password(row, candidate, validation_token=token)
+                except UserImportError as error:
+                    if error.code != 'invalid_password':
+                        raise
+                    issues.append(ImportIssue(error.code, error.message, row.row_number, row.line_number, 'password'))
+        except Exception:
+            stopped.set()
+            raise
+        finally:
+            if threaded:
+                connections.close_all()
+        return issues
+
+    if workers == 1:
+        return consume(False)
+    # Only `workers` futures exist, regardless of the CSV row count. Exiting the
+    # context joins all threads even when future.result() raises an exception.
+    with ThreadPoolExecutor(max_workers=workers, thread_name_prefix='user-import') as executor:
+        futures = [executor.submit(consume, True) for unused in range(min(workers, pending.qsize()))]
+        issues = [issue for future in futures for issue in future.result()]
+    return sorted(issues, key=lambda issue: issue.row)
+
+
+@sensitive_variables()
 def _validate_user_import(task, batch_id, version):
     token = None
     try:
@@ -163,15 +214,7 @@ def _validate_user_import(task, batch_id, version):
             with transaction.atomic():
                 locked_validation(batch_id, version, token)
                 pairs = capture_import_snapshot(actor, batch_id, version)
-        for row, candidate in pairs:
-            if row.errors:
-                continue
-            try:
-                prepare_import_password(row, candidate, validation_token=token)
-            except UserImportError as error:
-                if error.code != 'invalid_password':
-                    raise
-                issues.append(ImportIssue(error.code, error.message, row.row_number, row.line_number, 'password'))
+        issues.extend(_prepare_passwords(pairs, token, config.validation_workers))
         if issues:
             finish_import_validation(batch_id, version, token, UserImportBatch.Status.INVALID, issues)
             return

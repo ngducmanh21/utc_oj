@@ -36,3 +36,8 @@ CACHES['import_progress'] = {
     'OPTIONS': {'socket_timeout': 0.5, 'socket_connect_timeout': 0.5},
 }
 DMOJ_USER_IMPORT_PROGRESS_CACHE = 'import_progress'
+
+if os.environ.get('UTCOJ_IMPORT_LOAD_TEST') == '1':
+    from dmoj.user_import_load_test_settings import AUTH_PASSWORD_VALIDATORS, PASSWORD_HASHERS  # noqa: F401
+    DMOJ_USER_IMPORT_EXECUTION_LEASE_SECONDS = 600
+    DMOJ_USER_IMPORT_DISPATCH_SECONDS = 60

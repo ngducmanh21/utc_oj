@@ -27,6 +27,7 @@ KEY = base64.urlsafe_b64encode(b'a' * 32).decode()
 OTHER_KEY = base64.urlsafe_b64encode(b'b' * 32).decode()
 DIGEST_KEY = base64.urlsafe_b64encode(b'c' * 32).decode()
 IMPORT_SETTINGS = {
+    'DMOJ_USER_IMPORT_VALIDATION_WORKERS': 1,
     'DMOJ_USER_IMPORT_ENABLED': True,
     'DMOJ_USER_IMPORT_KEYS': {'one': KEY},
     'DMOJ_USER_IMPORT_ACTIVE_KEY_ID': 'one',

@@ -523,8 +523,10 @@ class ImportValidationTaskTests(PreviewData, TestCase):
     @override_settings(AUTH_PASSWORD_VALIDATORS=[{'NAME': 'judge.utils.pwned.PwnedPasswordsValidator'}])
     def test_hibp_timeout_uses_existing_fallback_and_reports_generic_password_error(self):
         batch = self.reserve(self.new_csv(password='password123'))
-        with patch('judge.utils.pwned.requests.get', side_effect=requests.Timeout):
+        with patch('judge.utils.pwned.requests.get', side_effect=requests.Timeout('private-transport-detail')), \
+                self.assertLogs('judge.utils.pwned', level='WARNING') as logs:
             self.validate(batch)
+        self.assertNotIn('private-transport-detail', '\n'.join(logs.output))
         self.assertEqual(batch.status, 'INVALID')
         self.assertEqual(batch.errors[0]['code'], 'invalid_password')
         self.assertNotIn('password123', json.dumps(batch.errors))

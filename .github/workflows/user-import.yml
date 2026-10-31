@@ -1,0 +1,121 @@
+name: user-import acceptance
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/user-import.yml'
+      - 'dmoj/**'
+      - 'judge/**'
+      - 'templates/**'
+      - 'resources/**'
+      - 'locale/**'
+      - 'tests/**'
+      - 'scripts/user-import-smoke.py'
+      - 'deploy/user-import/**'
+      - 'requirements.txt'
+      - 'package*.json'
+      - 'make_style.sh'
+  push:
+    paths:
+      - '.github/workflows/user-import.yml'
+      - 'dmoj/**'
+      - 'judge/**'
+      - 'templates/**'
+      - 'resources/**'
+      - 'locale/**'
+      - 'tests/**'
+      - 'scripts/user-import-smoke.py'
+      - 'deploy/user-import/**'
+      - 'requirements.txt'
+      - 'package*.json'
+      - 'make_style.sh'
+
+permissions:
+  contents: read
+
+jobs:
+  acceptance:
+    name: Python ${{ matrix.python }} / ${{ matrix.database }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python: '3.12'
+            database: MySQL 8
+            image: mysql:8.0
+            health: mysqladmin ping
+          - python: '3.11'
+            database: MariaDB 11.4
+            image: mariadb:11.4
+            health: healthcheck.sh --connect --innodb_initialized
+    services:
+      database:
+        image: ${{ matrix.image }}
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: dmoj
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: dmoj
+        ports:
+          - 13306:3306
+        options: >-
+          --health-cmd="${{ matrix.health }}" --health-interval=10s
+          --health-timeout=5s --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+      - name: Install runtime, browser and SQL tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gettext redis-server nginx default-libmysqlclient-dev default-mysql-client
+          python -m pip install wheel 'setuptools<82'
+          python -m pip install -r requirements.txt -r tests/browser/requirements.txt
+          python -m playwright install --with-deps chromium
+          cp .ci.settings.py dmoj/local_settings.py
+          npm ci
+          ./make_style.sh
+          python manage.py compilemessages -l vi
+          python manage.py compilejsi18n
+      - name: Checks and full regression, including migration upgrade/drift gate
+        run: |
+          python manage.py check --settings=dmoj.user_import_test_settings
+          python manage.py test judge urlshortener --settings=dmoj.user_import_test_settings --noinput
+      - name: Real Redis, prefork, rollback and recovery
+        env:
+          UTCOJ_IMPORT_ARTIFACTS: ${{ runner.temp }}/user-import/worker
+        run: |
+          python manage.py test tests.integration.user_import \
+            --settings=dmoj.user_import_integration_test_settings --noinput
+          UTCOJ_TEST_NGINX=/usr/sbin/nginx python manage.py test tests.integration.user_import_proxy \
+            --settings=dmoj.user_import_test_settings --noinput
+      - name: 2,000 rows, 5 MiB, PBKDF2 and HIBP timeout fallback
+        env:
+          UTCOJ_IMPORT_ARTIFACTS: ${{ runner.temp }}/user-import/load
+        run: |
+          python manage.py test tests.integration.user_import_load \
+            --settings=dmoj.user_import_load_test_settings --noinput
+      - name: HTTPS browser, imported account login and managed-login operations
+        env:
+          UTCOJ_BROWSER_CHANNEL: chromium
+          UTCOJ_BROWSER_ARTIFACTS: ${{ runner.temp }}/user-import/browser
+        run: |
+          python manage.py test tests.browser.user_import tests.browser.managed_login \
+            tests.integration.managed_login --settings=dmoj.managed_login_test_settings --noinput
+      - name: Upload local acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: user-import-${{ matrix.python }}
+          path: ${{ runner.temp }}/user-import
+          if-no-files-found: ignore
+          retention-days: 7

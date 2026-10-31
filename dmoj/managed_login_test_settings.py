@@ -5,12 +5,14 @@ from copy import deepcopy
 from django.core.exceptions import ImproperlyConfigured
 
 from dmoj.settings import *  # noqa: F401,F403
+from dmoj.test_database import configure_test_database
 
 DATABASES = deepcopy(DATABASES)  # noqa: F405
 if DATABASES['default']['ENGINE'] != 'django.db.backends.mysql':
     raise ImproperlyConfigured('Managed login integration tests require MySQL/MariaDB, not SQLite.')
 DATABASES['default']['NAME'] = 'utcoj_managed_login_bootstrap_unused'
 DATABASES['default']['TEST'] = {'NAME': 'test_utcoj_managed_login'}
+configure_test_database(DATABASES['default'])
 CACHES = {'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}}
 EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
 DEFAULT_USER_LANGUAGE = 'CPP17'

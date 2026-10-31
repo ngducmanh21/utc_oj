@@ -67,7 +67,9 @@ def _get_pwned(prefix):
         response.raise_for_status()
     except requests.RequestException:
         # Gracefully handle timeouts and HTTP error response codes.
-        log.warning('Skipped Pwned Passwords check due to error', exc_info=True)
+        # Request tracebacks can include URLs (password hash prefixes) or
+        # exception text supplied by a transport. Keep credential checks private.
+        log.warning('Skipped Pwned Passwords check due to error')
         return None
 
     results = {}

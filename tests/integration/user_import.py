@@ -34,8 +34,7 @@ from judge.tests.test_user_import_service import NEW_PASSWORD
 from judge.utils.user_import_maintenance import recover_import_batches
 
 
-@tag('integration', 'user-import')
-class UserImportWorkerTests(ExecutionData, TransactionTestCase):
+class UserImportHarness(ExecutionData):
     @classmethod
     def setUpClass(cls):
         if (connection.vendor != 'mysql' or
@@ -193,6 +192,9 @@ class UserImportWorkerTests(ExecutionData, TransactionTestCase):
         rows[1] = ['existing', NEW_PASSWORD, 'Changed by batch', '', '', 'org_b', 'true']
         return self.queued(rows)
 
+
+@tag('integration', 'user-import')
+class UserImportWorkerTests(UserImportHarness, TransactionTestCase):
     def test_upload_validation_confirm_completion_duplicate_delivery_and_secret_free_broker(self):
         self.start_worker()
         before = self.account_state()
