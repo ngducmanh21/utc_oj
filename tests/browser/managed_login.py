@@ -14,6 +14,7 @@ from django.urls import reverse
 from social_django.models import UserSocialAuth
 
 from judge.models import Language, ManagedAccountEvent, Problem, ProblemGroup, Profile, WebAuthnCredential
+from judge.social_auth import GitHubSecureEmailOAuth2
 from judge.tests.test_managed_login import ManagedAccountData
 from judge.tests.test_managed_password_login import PASSWORD, SCRATCH_CODE, TOTP_KEY
 from judge.utils.managed_login import PENDING_LOGIN_KEY
@@ -152,17 +153,26 @@ class ManagedLoginBrowserTests(ManagedAccountData, HTTPSBrowserTestCase):
         )
         config.enable()
         self.addCleanup(config.disable)
+        # social-auth caches backend classes by name independently of settings.
+        # A rendered login page may already have cached the production backend.
+        self.enterContext(patch('social_core.backends.utils.BACKENDSCACHE', {}))
         UserSocialAuth.objects.create(user=self.user, provider='github-secure', uid='424242')
         return provider
 
     def begin_oauth(self, page):
-        self.go(page, reverse('social:begin', args=['github-secure']) + '?next=' + reverse('user_edit_profile'))
+        self.assertEqual(self.go(page, reverse('social:begin', args=['github-secure']) +
+                                 '?next=' + reverse('user_edit_profile')), 200)
+        self.assertEqual(urlsplit(self.ui(lambda: page.url)).netloc, urlsplit(settings.M5_OAUTH_PROVIDER_URL).netloc)
         self.assert_path(page, '/authorize')
 
     def approve_oauth(self, page):
         self.ui(lambda: page.get_by_role('button', name='Approve test identity').click())
 
     def test_oauth_http_round_trip_off_on_off_preserves_link(self):
+        # Exercise the fixture after another request has populated the cache.
+        self.enterContext(patch('social_core.backends.utils.BACKENDSCACHE', {
+            'github-secure': GitHubSecureEmailOAuth2,
+        }))
         provider = self.oauth_provider()
         self.begin_oauth(self.b)
         self.approve_oauth(self.b)

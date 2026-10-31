@@ -27,6 +27,9 @@ from judge.tests.test_user_import_preview import PreviewData
 @override_settings(**IMPORT_SETTINGS, AUTH_PASSWORD_VALIDATORS=[], SESSION_COOKIE_SECURE=False,
                    CSRF_COOKIE_SECURE=False, LANGUAGE_CODE='en')
 class UserImportProxyTests(PreviewData, LiveServerTestCase):
+    # LiveServerTestCase also adds this host to ALLOWED_HOSTS for proxy requests.
+    host = '127.0.0.1'
+
     def test_maximum_csv_and_overflow_leave_no_proxy_or_django_temp_files_or_credentials_in_logs(self):
         nginx = os.environ.get('UTCOJ_TEST_NGINX') or shutil.which('nginx')
         if not nginx:

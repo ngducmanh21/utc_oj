@@ -39,7 +39,8 @@ lupa
 netaddr
 webauthn<1
 bleach[css]
-markdown2 @ git+https://github.com/VNOI-Admin/python-markdown2.git
+# Pin the VNOJ renderer for UTCOJ's ~...~ and $$...$$ MathJax syntax.
+markdown2 @ git+https://github.com/VNOI-Admin/python-markdown2.git@60ef5410777363d52ee8034e9481bd8cfd2e79bd
 discord-webhook
 django-admin-sortable2
 icalendar

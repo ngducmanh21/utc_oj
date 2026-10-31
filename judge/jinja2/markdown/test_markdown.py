@@ -122,6 +122,11 @@ class TestMarkdown(SimpleTestCase):
         cleaner = get_cleaner(self.BLEACHED_STYLE, None)
         self.assertHTMLEqual(cleaner.clean(MATHML_CHUDNOVSKY), MATHML_CHUDNOVSKY)
 
+    def test_vnoj_latex_preserves_delimiters_and_formula_markup(self):
+        for formula in (r'~\sum_{i=1}^{n} a_i *b*~', r'$$\sum_{i=1}^{n} a_i *b*$$'):
+            with self.subTest(formula=formula):
+                self.assertHTMLEqual(markdown(formula, self.BLEACHED_STYLE), '<p>' + formula + '</p>')
+
     def test_no_bleach(self):
         self.assertHTMLEqual(markdown('<script>void(0)</script>', self.UNBLEACHED_STYLE),
                              '<script>void(0)</script>')
